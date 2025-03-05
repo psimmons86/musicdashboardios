@@ -1,58 +1,54 @@
-# Music Dashboard iOS App
+# Music Dashboard iOS
 
-A SwiftUI-based iOS application that allows users to manage their music library, create playlists, and view streaming statistics using a backend API for Apple Music integration.
+A native iOS app that provides a beautiful interface for managing and exploring your Apple Music library.
 
 ## Features
 
-- Apple Music Integration via Backend API
-- Playlist Generation
-- Streaming Statistics
-- User Profile Management
+- View streaming statistics and listening history
+- Generate personalized playlists
+- Browse music news and updates
+- Track your favorite artists and songs
+- View detailed music analytics
 
 ## Requirements
 
-- iOS 15.0+
+- iOS 17.0+
 - Xcode 14.0+
-- Apple Developer Account
-- Backend API access (for music services)
+- Apple Music subscription
+- Apple Developer account
 
-## Setup
+## Installation
 
-1. Clone the repository
-2. Install XcodeGen if not already installed:
-   ```bash
-   brew install xcodegen
-   ```
-3. Generate the Xcode project:
-   ```bash
-   cd musicdashboard
-   xcodegen generate
-   ```
-4. Open the generated Xcode project:
-   ```bash
-   xed .
-   ```
-5. Set up your development team in Xcode
-6. Configure the backend API endpoint in AppleMusicService.swift
-7. Build and run the project
+1. Clone the repository:
+```bash
+git clone https://github.com/psimmons86/musicdashboardios.git
+```
 
-## Project Structure
+2. Open the project:
+```bash
+cd musicdashboardios
+xed .
+```
 
-- `Sources/`: Main source code directory
-  - `Views/`: SwiftUI views
-  - `Services/`: Business logic and services
-  - `Assets.xcassets/`: App assets
-  - `Info.plist`: App configuration
-  - `LaunchScreen.storyboard`: Launch screen
+3. Build and run the project in Xcode.
 
-## Development
+## Configuration
 
-The app is built using:
-- SwiftUI for the UI
-- Backend API for Apple Music integration
-- Combine for reactive programming
-- MVVM architecture
+The app requires the following capabilities and entitlements:
+- MusicKit
+- Background Audio
+- Apple Music Library Access
+
+These are already configured in the project settings and entitlements file.
+
+## Architecture
+
+The app follows a clean architecture pattern with:
+- SwiftUI views for the UI layer
+- Service layer for business logic
+- Model layer for data structures
+- Native MusicKit integration
 
 ## License
 
-This project is for demonstration purposes only and is not intended for distribution.
+This project is licensed under the MIT License - see the LICENSE file for details.
