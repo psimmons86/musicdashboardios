@@ -2,7 +2,7 @@ import Foundation
 
 public class NewsService {
     public static let shared = NewsService()
-    private let apiKey = "YOUR_NEWSAPI_KEY" // Replace with your NewsAPI key
+    private let apiKey = "e5d625694eef4943b02a393004694d0e"
     private let baseURL = "https://newsapi.org/v2"
     
     private init() {}

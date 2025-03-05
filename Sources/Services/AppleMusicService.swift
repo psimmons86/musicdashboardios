@@ -147,18 +147,20 @@ public class AppleMusicService {
     public func getStreamingStats() async throws -> StreamingStats {
         guard isAuthorized else { throw ServiceError.unauthorized }
         
+        print("[Stats] Starting to load streaming stats: \(Date())")
+        
         // Get recently played tracks
+        print("[Stats] Fetching recently played tracks...")
         var recentRequest = MusicRecentlyPlayedRequest<Song>()
         recentRequest.limit = 25
         let recentResponse = try await recentRequest.response()
         
-        // Get recommendations for variety
+        print("[Stats] Fetching recommendations...")
         var recommendRequest = MusicPersonalRecommendationsRequest()
         recommendRequest.limit = 30
         let recommendResponse = try await recommendRequest.response()
         
-        // Process tracks
-        // Get multiple pages of recent tracks
+        print("[Stats] Processing tracks in batches...")
         var allTracks: [Track] = []
         var offset = 0
         let pageSize = 25
@@ -177,7 +179,7 @@ public class AppleMusicService {
             offset += pageSize
         }
         
-        // Add recommended tracks
+        print("[Stats] Adding recommended tracks...")
         let recommendedTracks = recommendResponse.recommendations
             .flatMap { recommendation -> [Song] in
                 if let songs = recommendation.items as? MusicItemCollection<Song> {
@@ -189,20 +191,25 @@ public class AppleMusicService {
         
         allTracks.append(contentsOf: recommendedTracks)
         
-        // Calculate artist stats
-        var artistStats: [String: (playCount: Int, tracks: Set<Track>)] = [:]
+        print("[Stats] Calculating play counts...")
+        let trackSet = NSCountedSet(array: allTracks)
+        let artistSet = NSCountedSet(array: allTracks.map { $0.artist })
+        
+        // Build artist stats with accurate play counts
+        var artistStats: [String: Set<Track>] = [:]
         for track in allTracks {
-            let stats = artistStats[track.artist] ?? (0, [])
-            artistStats[track.artist] = (stats.0 + 1, stats.1.union([track]))
+            var tracks = artistStats[track.artist] ?? []
+            tracks.insert(track)
+            artistStats[track.artist] = tracks
         }
         
-        let topArtists = artistStats.map { name, stats in
+        let topArtists = artistStats.map { name, tracks in
             ArtistStats(
                 id: name.lowercased().replacingOccurrences(of: " ", with: "-"),
                 name: name,
-                playCount: stats.playCount,
-                totalListeningTime: stats.playCount * 3, // Estimate 3 minutes per track
-                topTracks: Array(stats.tracks).prefix(5).map { $0 }
+                playCount: artistSet.count(for: name),
+                totalListeningTime: artistSet.count(for: name) * 3, // Estimate 3 minutes per track
+                topTracks: Array(tracks).prefix(5).map { $0 }
             )
         }.sorted { $0.playCount > $1.playCount }
         
@@ -217,38 +224,29 @@ public class AppleMusicService {
             averageTracksPerDay: allTracks.count / 7
         )
         
-        // Create track stats
-        let trackCounts = NSCountedSet(array: allTracks.map { $0.id })
-        let topTracks = allTracks
-            .reduce(into: [String: Track]()) { dict, track in
-                dict[track.id] = track
-            }
-            .map { id, track in
-                TrackStats(
-                    id: id,
-                    track: track,
-                    playCount: trackCounts.count(for: id),
-                    totalListeningTime: trackCounts.count(for: id) * 3,
-                    lastPlayed: Date()
-                )
-            }
-            .sorted { $0.playCount > $1.playCount }
+        // Get accurate play counts from CloudKit
+        print("[Stats] Fetching play counts from CloudKit...")
+        let playCounts = try await CloudKitService.shared.getAllPlayCounts()
         
-        // Create listening history
-        let listeningHistory = allTracks
-            .prefix(50)
-            .enumerated()
-            .map { index, track in
-                let startTime = Calendar.current.date(byAdding: .hour, value: -index, to: Date()) ?? Date()
-                return ListeningSession(
-                    id: UUID().uuidString,
-                    startTime: startTime,
-                    duration: 3, // Estimate 3 minutes per track
-                    tracks: [track]
-                )
-            }
-            .sorted { $0.startTime > $1.startTime }
+        // Create track stats with accurate play counts
+        let uniqueTracks = Array(Set(allTracks))
+        let topTracks = uniqueTracks.map { track in
+            let playCount = playCounts[track.id] ?? trackSet.count(for: track)
+            return TrackStats(
+                id: track.id,
+                track: track,
+                playCount: playCount,
+                totalListeningTime: playCount * 3,
+                lastPlayed: Date()
+            )
+        }.sorted { $0.playCount > $1.playCount }
+        
+        // Get listening history from CloudKit
+        print("[Stats] Fetching listening history...")
+        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        let listeningHistory = try await CloudKitService.shared.getListeningSessions(since: weekAgo)
 
+        print("[Stats] Finished loading stats: \(Date())")
         return StreamingStats(
             totalListeningTime: allTracks.count * 3,
             topArtists: Array(topArtists.prefix(10)),

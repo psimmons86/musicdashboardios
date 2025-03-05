@@ -104,17 +104,8 @@ public struct DashboardView: View {
         isLoading = true
         errorMessage = nil
         
+        // Load Apple Music data first
         do {
-            // Load data in smaller batches
-            // First batch: News and genres
-            let (genres, news) = try await (
-                NewsService.shared.getAvailableGenres(),
-                NewsService.shared.getMusicNews(genre: selectedNewsGenre)
-            )
-            availableGenres = genres
-            newsArticles = news
-            
-            // Second batch: Apple Music data
             let (recent, top) = try await (
                 AppleMusicService.shared.getRecentlyPlayed(),
                 AppleMusicService.shared.getTopTracks()
@@ -122,9 +113,24 @@ public struct DashboardView: View {
             recentlyPlayed = recent
             topTracks = top
             
+            // Try to load news data, but don't let it block the dashboard
+            Task {
+                do {
+                    let (genres, news) = try await (
+                        NewsService.shared.getAvailableGenres(),
+                        NewsService.shared.getMusicNews(genre: selectedNewsGenre)
+                    )
+                    availableGenres = genres
+                    newsArticles = news
+                } catch {
+                    print("Failed to load news: \(error)")
+                }
+            }
+            
             isLoading = false
         } catch {
-            errorMessage = "Failed to load dashboard"
+            print("Dashboard load error: \(error)")
+            errorMessage = "Failed to load music data. Please check your Apple Music connection."
             isLoading = false
         }
     }

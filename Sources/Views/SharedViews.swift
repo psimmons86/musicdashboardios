@@ -85,11 +85,18 @@ public struct QuickActionCard: View {
     }
 }
 
-struct TrackCard: View {
+public struct TrackCard: View {
     let track: Track
     let action: () -> Void
+    @State private var isPlaying = false
+    @State private var errorMessage: String?
     
-    var body: some View {
+    public init(track: Track, action: @escaping () -> Void) {
+        self.track = track
+        self.action = action
+    }
+    
+    public var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
                 if let artworkURL = track.artworkURLForSize(width: 60, height: 60) {
@@ -110,29 +117,72 @@ struct TrackCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(track.title)
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                         .lineLimit(1)
                     
                     Text(track.artist)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                         .lineLimit(1)
                     
                     Text(track.albumTitle)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                         .lineLimit(1)
                 }
                 
                 Spacer()
                 
-                Image(systemName: "play.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.accentColor)
+                Button {
+                    playTrack()
+                } label: {
+                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(AppTheme.accent)
+                }
             }
             .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(radius: 2)
+            .background(AppTheme.surfaceBackground)
+            .clipShape(AppTheme.cardShape)
+            .shadow(color: AppTheme.shadowColor, radius: AppTheme.shadowRadius / 2, y: AppTheme.shadowY / 2)
+        }
+        .alert("Playback Error", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") {
+                errorMessage = nil
+            }
+        } message: {
+            if let error = errorMessage {
+                Text(error)
+            }
+        }
+    }
+    
+    private func playTrack() {
+        Task {
+            do {
+                let request = MusicCatalogSearchRequest(term: "\(track.artist) \(track.title)", types: [Song.self])
+                let response = try await request.response()
+                
+                if let song = response.songs.first {
+                    if isPlaying {
+                        try await MusicPlayer.shared.stop()
+                        isPlaying = false
+                    } else {
+                        try await MusicPlayer.shared.queue = [song]
+                        try await MusicPlayer.shared.play()
+                        isPlaying = true
+                        
+                        // Track play count
+                        try await CloudKitService.shared.incrementPlayCount(for: track)
+                        print("[Player] Tracked play for: \(track.title)")
+                    }
+                } else {
+                    errorMessage = "Track not found in Apple Music"
+                }
+            } catch {
+                print("[Player] Error playing track: \(error)")
+                errorMessage = "Failed to play track: \(error.localizedDescription)"
+            }
         }
     }
 }
