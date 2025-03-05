@@ -166,11 +166,11 @@ public struct TrackCard: View {
                 
                 if let song = response.songs.first {
                     if isPlaying {
-                        try await MusicKit.MusicPlayer.shared.stop()
+                        try await MusicKit.ApplicationMusicPlayer.shared.stop()
                         isPlaying = false
                     } else {
-                        try await MusicKit.MusicPlayer.shared.queue = [song]
-                        try await MusicKit.MusicPlayer.shared.play()
+                        try await MusicKit.ApplicationMusicPlayer.shared.queue = [song]
+                        try await MusicKit.ApplicationMusicPlayer.shared.play()
                         isPlaying = true
                         
                         // TODO: Re-enable CloudKit tracking once basic functionality works

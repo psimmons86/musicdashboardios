@@ -33,7 +33,13 @@
 - Remove CloudKit imports and service usage
 - Remove MusicDashboard module import
 - Focus on getting basic music playback working first
-- Result: Pending - Testing basic music functionality
+- Result: ❌ Failed - MusicPlayer.shared not found
+
+### 2025-03-05 14:26 PST - Fix Music Player Usage
+- Switch to ApplicationMusicPlayer.shared
+- Update playback code to use correct class
+- Keep focus on basic music functionality
+- Result: Pending - Testing with correct music player class
 
 ### Next Test (After Basic Signing Works):
 1. Add CloudKit capability:
@@ -65,3 +71,4 @@
 1. Using @_exported import CloudKitService
 2. Using MusicKit service capability directly
 3. Using application-services without proper team ID
+4. Using MusicPlayer.shared instead of ApplicationMusicPlayer.shared
