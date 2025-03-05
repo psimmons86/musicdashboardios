@@ -52,11 +52,21 @@
    - icloud-services
 
 ## [Next Steps]
-1. Test CloudKit configuration
-2. Add music usage description
-3. Set up CloudKit schema for:
+1. Follow manual CloudKit setup process (see MANUAL_CLOUDKIT_SETUP.md)
+2. Test CloudKit configuration
+3. Add music usage description
+4. Set up CloudKit schema for:
    - Track records
    - Listening sessions
+
+## [Manual Setup Required]
+Created MANUAL_CLOUDKIT_SETUP.md with step-by-step instructions for:
+1. Apple Developer Portal configuration
+2. Xcode capability setup
+3. CloudKit Dashboard schema creation
+4. Testing procedures
+
+The manual setup will create the proper entitlements and provisioning profiles that our configuration files will use.
 
 ## [Known Working Configurations]
 - None yet
