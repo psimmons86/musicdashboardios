@@ -1,4 +1,6 @@
 import SwiftUI
+import MusicKit
+import CloudKit
 
 struct NewsArticleRow: View {
     let article: NewsArticle
