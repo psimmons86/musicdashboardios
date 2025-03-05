@@ -25,40 +25,40 @@
    - Identifier: iCloud.com.musicdashboard.stats
 7. Click Continue and register
 
-## 3. Xcode Setup
+## 3. CloudKit Schema Setup
 
-1. Open Xcode (not VS Code)
-2. Create a new project or open existing one
-3. Select your target
-4. Go to "Signing & Capabilities" tab
-5. Click "+" button to add capability
-6. Add "iCloud" capability
-7. In the iCloud section:
-   - Check "Include CloudKit support"
-   - Click "+" under Containers
-   - Select "iCloud.com.musicdashboard.stats"
-8. Save changes
+The schema setup script (setup-cloudkit-schema.swift) will automatically create:
 
-## 4. CloudKit Dashboard Setup
+1. Track Record Type with fields:
+   - id (String)
+   - title (String)
+   - artist (String)
+   - albumTitle (String)
+   - artworkURL (String)
+   - playCount (Number)
+   - lastPlayed (Date/Time)
 
-1. Go to https://icloud.developer.apple.com/dashboard/
-2. Select your container: iCloud.com.musicdashboard.stats
-3. Go to "Schema" section
-4. Add Record Types:
-   - Track
-     - id (String)
-     - title (String)
-     - artist (String)
-     - albumTitle (String)
-     - artworkURL (String)
-     - playCount (Number)
-     - lastPlayed (Date/Time)
-   - ListeningSession
-     - startTime (Date/Time)
-     - duration (Number)
-     - trackIds (List of Strings)
+2. ListeningSession Record Type with fields:
+   - startTime (Date/Time)
+   - duration (Number)
+   - trackIds (String - comma-separated list)
 
-## 5. Verify Setup
+To run the script:
+```bash
+# Build the script
+swiftc -sdk $(xcrun --show-sdk-path --sdk macosx) setup-cloudkit-schema.swift
+
+# Run it
+./setup-cloudkit-schema
+```
+
+The script will:
+- Connect to your CloudKit container
+- Create both record types with proper fields
+- Set up sample records to establish the schema
+- Print progress as it runs
+
+## 4. Verify Setup
 
 1. Check entitlements file contains:
    ```xml
@@ -79,7 +79,7 @@
      - com.apple.developer.icloud-container-identifiers
    ```
 
-## 6. Testing
+## 5. Testing
 
 1. After manual setup, open project in VS Code
 2. Build and run
@@ -91,3 +91,12 @@
 
 ## Note
 CloudKit support is enabled by checking "Include CloudKit support" under the iCloud capability. The interface shows this as a radio button option under iCloud, not as a separate capability or service to configure.
+
+## Troubleshooting Schema Setup
+
+If the schema setup script fails:
+1. Ensure you're signed into iCloud on your Mac
+2. Check that the container ID matches exactly
+3. Verify you have proper entitlements
+4. Try running the script with sudo if needed
+5. Check Console.app for any CloudKit-related errors
