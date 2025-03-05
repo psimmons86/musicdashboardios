@@ -2,6 +2,9 @@ import SwiftUI
 import MusicKit
 import CloudKit
 
+// Import CloudKitService for play count tracking
+@_exported import CloudKitService
+
 struct NewsArticleRow: View {
     let article: NewsArticle
     
