@@ -28,41 +28,35 @@
 - Testing with empty entitlements file
 - Result: ❌ Failed - Compilation errors with MusicPlayer and CloudKit
 
-### 2025-03-05 14:25 PST - Remove CloudKit Dependencies
-- Use fully qualified MusicKit.MusicPlayer.shared
-- Remove CloudKit imports and service usage
-- Remove MusicDashboard module import
-- Focus on getting basic music playback working first
-- Result: ❌ Failed - MusicPlayer.shared not found
-
 ### 2025-03-05 14:26 PST - Fix Music Player Usage
 - Switch to ApplicationMusicPlayer.shared
 - Update playback code to use correct class
 - Keep focus on basic music functionality
-- Result: Pending - Testing with correct music player class
+- Result: ❌ Failed - CloudKit service not found in scope
 
-### Next Test (After Basic Signing Works):
-1. Add CloudKit capability:
-   ```xml
-   <key>com.apple.developer.icloud-services</key>
-   <array>
-       <string>CloudKit</string>
-   </array>
-   ```
+### 2025-03-05 14:31 PST - Fix CloudKit Configuration
+- Set up proper CloudKit container identifier
+- Configure CloudKit capabilities in project.yml
+- Add iCloud services to required device capabilities
+- Add specific CloudKit container identifier
+- Result: Pending - Testing with proper CloudKit configuration
 
-2. Add Music capability:
-   ```xml
-   <key>NSAppleMusicUsageDescription</key>
-   <string>Access your music library</string>
-   ```
+## [Current Configuration]
+1. CloudKit Container: iCloud.com.musicdashboard.stats
+2. Capabilities:
+   - iCloud services
+   - CloudKit
+   - Background modes (audio, fetch)
+3. Required Device Capabilities:
+   - armv7
+   - icloud-services
 
-## [Next Steps to Try]
-1. Remove all custom capabilities and start with basic app setup
-2. Add capabilities one at a time, testing each:
-   - First: Basic app signing
-   - Second: CloudKit services
-   - Third: Media/Music access
-3. Document exact error messages for each attempt
+## [Next Steps]
+1. Test CloudKit configuration
+2. Add music usage description
+3. Set up CloudKit schema for:
+   - Track records
+   - Listening sessions
 
 ## [Known Working Configurations]
 - None yet
@@ -72,3 +66,4 @@
 2. Using MusicKit service capability directly
 3. Using application-services without proper team ID
 4. Using MusicPlayer.shared instead of ApplicationMusicPlayer.shared
+5. Using default CloudKit container instead of specific identifier

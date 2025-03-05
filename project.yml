@@ -44,7 +44,12 @@ targets:
         INFOPLIST_KEY_UIBackgroundModes:
           - audio
           - fetch
-        PRODUCT_BUNDLE_CAPABILITIES: []
+        PRODUCT_BUNDLE_CAPABILITIES:
+          - com.apple.developer.icloud-services
+          - com.apple.developer.icloud-container-identifiers
+          - com.apple.developer.icloud-container-environment
+        PRODUCT_SPECIFIC_CAPABILITIES:
+          - iCloud.com.musicdashboard.stats
     
     info:
       path: Sources/Info.plist
@@ -54,6 +59,7 @@ targets:
         UILaunchStoryboardName: LaunchScreen
         UIRequiredDeviceCapabilities:
           - armv7
+          - icloud-services
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UISupportedInterfaceOrientations~ipad:
