@@ -61,12 +61,19 @@
 
 ## [Manual Setup Required]
 Created MANUAL_CLOUDKIT_SETUP.md with step-by-step instructions for:
-1. Apple Developer Portal configuration
-2. Xcode capability setup
+1. Apple Developer Portal configuration:
+   - Enable iCloud capability
+   - Select CloudKit service
+   - Configure iCloud container
+2. Xcode capability setup:
+   - Add iCloud capability
+   - Enable CloudKit service
+   - Configure container
 3. CloudKit Dashboard schema creation
-4. Testing procedures
+4. Verification steps
+5. Testing procedures
 
-The manual setup will create the proper entitlements and provisioning profiles that our configuration files will use.
+Important Note: CloudKit is enabled through the iCloud capability, not as a separate capability. The iCloud capability with CloudKit service selected will set up all the necessary entitlements and provisioning profiles.
 
 ## [Known Working Configurations]
 - None yet

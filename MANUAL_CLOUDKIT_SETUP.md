@@ -5,10 +5,10 @@
 1. Go to https://developer.apple.com/account/
 2. Select "Certificates, Identifiers & Profiles"
 3. Under "Identifiers", find or create your app ID (com.musicdashboard.app)
-4. Enable the following capabilities:
-   - iCloud
-   - CloudKit
-5. Click "Configure" next to CloudKit and:
+4. Enable the iCloud capability:
+   - Click the checkbox next to iCloud
+   - Under iCloud services, select "CloudKit"
+   - Click "Configure" next to iCloud
    - Create a new iCloud Container with ID: iCloud.com.musicdashboard.stats
    - Select "Development" environment
    - Save the changes
@@ -19,14 +19,13 @@
 2. Create a new project or open existing one
 3. Select your target
 4. Go to "Signing & Capabilities" tab
-5. Click "+" button to add capabilities
-6. Add:
-   - iCloud
-   - CloudKit
-7. Under iCloud:
-   - Check "CloudKit"
-   - Add container: iCloud.com.musicdashboard.stats
-8. Save changes
+5. Click "+" button to add capability
+6. Add "iCloud" capability:
+   - In the iCloud section that appears:
+     - Check "CloudKit"
+     - Click "+" under Containers
+     - Add container: iCloud.com.musicdashboard.stats
+7. Save changes
 
 ## 3. CloudKit Dashboard Setup
 
@@ -47,7 +46,28 @@
      - duration (Number)
      - trackIds (List of Strings)
 
-## 4. Testing
+## 4. Verify Setup
+
+1. Check entitlements file contains:
+   ```xml
+   <key>com.apple.developer.icloud-container-identifiers</key>
+   <array>
+       <string>iCloud.com.musicdashboard.stats</string>
+   </array>
+   <key>com.apple.developer.icloud-services</key>
+   <array>
+       <string>CloudKit</string>
+   </array>
+   ```
+
+2. Check project.yml has:
+   ```yaml
+   PRODUCT_BUNDLE_CAPABILITIES:
+     - com.apple.developer.icloud-services
+     - com.apple.developer.icloud-container-identifiers
+   ```
+
+## 5. Testing
 
 1. After manual setup, open project in VS Code
 2. Build and run
@@ -58,4 +78,4 @@
    - Re-run build
 
 ## Note
-The manual setup creates proper entitlements and provisioning profiles that our project.yml and Package.swift configurations will use.
+CloudKit is enabled through the iCloud capability - there is no separate CloudKit capability to add. The iCloud capability with CloudKit service selected will set up all the necessary entitlements and configurations.
