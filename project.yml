@@ -44,20 +44,7 @@ targets:
         INFOPLIST_KEY_UIBackgroundModes:
           - audio
           - fetch
-        PRODUCT_BUNDLE_CAPABILITIES:
-          - com.apple.developer.musickit.service
-          - com.apple.developer.icloud-services
-          - com.apple.developer.icloud-container-identifiers
-          - com.apple.developer.icloud-container-environment
-    entitlements:
-      path: Sources/MusicDashboard.entitlements
-      properties:
-        com.apple.developer.musickit.service: true
-        com.apple.developer.icloud-services:
-          - CloudKit
-        com.apple.developer.icloud-container-identifiers:
-          - iCloud.com.musicdashboard.stats
-        com.apple.developer.icloud-container-environment: Production
+        PRODUCT_BUNDLE_CAPABILITIES: []
     
     info:
       path: Sources/Info.plist
