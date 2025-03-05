@@ -27,9 +27,7 @@ targets:
     type: application
     platform: iOS
     sources:
-      - path: Sources
-        excludes:
-          - "Services/SpotifyService.swift"
+      - Sources
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
