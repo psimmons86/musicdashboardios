@@ -5,29 +5,41 @@
 1. Go to https://developer.apple.com/account/
 2. Select "Certificates, Identifiers & Profiles"
 3. Under "Identifiers", find or create your app ID (com.musicdashboard.app)
-4. Enable the iCloud capability:
-   - Click the checkbox next to iCloud
-   - Under iCloud services, select "CloudKit"
-   - Click "Configure" next to iCloud
-   - Create a new iCloud Container with ID: iCloud.com.musicdashboard.stats
-   - Select "Development" environment
-   - Save the changes
+4. Enable iCloud:
+   - Check the box next to iCloud
+   - Select "Include CloudKit support (requires Xcode 6)"
+   - Click "Edit"
+   - You should see "iCloud Container Assignment"
+   - Select "iCloud.com.musicdashboard.stats"
+   - Click Continue and save changes
 
-## 2. Xcode Setup
+## 2. Create iCloud Container (if not exists)
+
+1. In Apple Developer Portal
+2. Go to "Certificates, Identifiers & Profiles"
+3. Select "Identifiers" from the left sidebar
+4. Click the "+" button to register a new identifier
+5. Choose "iCloud Containers"
+6. Enter description and identifier:
+   - Description: Music Dashboard Stats
+   - Identifier: iCloud.com.musicdashboard.stats
+7. Click Continue and register
+
+## 3. Xcode Setup
 
 1. Open Xcode (not VS Code)
 2. Create a new project or open existing one
 3. Select your target
 4. Go to "Signing & Capabilities" tab
 5. Click "+" button to add capability
-6. Add "iCloud" capability:
-   - In the iCloud section that appears:
-     - Check "CloudKit"
-     - Click "+" under Containers
-     - Add container: iCloud.com.musicdashboard.stats
-7. Save changes
+6. Add "iCloud" capability
+7. In the iCloud section:
+   - Check "Include CloudKit support"
+   - Click "+" under Containers
+   - Select "iCloud.com.musicdashboard.stats"
+8. Save changes
 
-## 3. CloudKit Dashboard Setup
+## 4. CloudKit Dashboard Setup
 
 1. Go to https://icloud.developer.apple.com/dashboard/
 2. Select your container: iCloud.com.musicdashboard.stats
@@ -46,7 +58,7 @@
      - duration (Number)
      - trackIds (List of Strings)
 
-## 4. Verify Setup
+## 5. Verify Setup
 
 1. Check entitlements file contains:
    ```xml
@@ -67,7 +79,7 @@
      - com.apple.developer.icloud-container-identifiers
    ```
 
-## 5. Testing
+## 6. Testing
 
 1. After manual setup, open project in VS Code
 2. Build and run
@@ -78,4 +90,4 @@
    - Re-run build
 
 ## Note
-CloudKit is enabled through the iCloud capability - there is no separate CloudKit capability to add. The iCloud capability with CloudKit service selected will set up all the necessary entitlements and configurations.
+CloudKit support is enabled by checking "Include CloudKit support" under the iCloud capability. The interface shows this as a radio button option under iCloud, not as a separate capability or service to configure.

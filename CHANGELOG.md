@@ -73,7 +73,12 @@ Created MANUAL_CLOUDKIT_SETUP.md with step-by-step instructions for:
 4. Verification steps
 5. Testing procedures
 
-Important Note: CloudKit is enabled through the iCloud capability, not as a separate capability. The iCloud capability with CloudKit service selected will set up all the necessary entitlements and provisioning profiles.
+Important Note: In the Developer Portal, CloudKit is enabled by selecting "Include CloudKit support" radio button under the iCloud capability. After enabling CloudKit support, you'll need to:
+1. Create an iCloud Container (if not exists)
+2. Assign the container to your app ID
+3. Configure the container in Xcode
+
+The UI shows this as a simple radio button option, not as a separate service to configure as previously documented.
 
 ## [Known Working Configurations]
 - None yet
