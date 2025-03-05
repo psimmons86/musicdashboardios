@@ -1,5 +1,6 @@
 import Foundation
 import MusicKit
+import CloudKit
 
 enum ServiceError: Error {
     case unauthorized
@@ -327,7 +328,7 @@ public class AppleMusicService {
         var allRecommendations: [Track] = []
         
         // Get recommendations based on each seed track
-        for track in tracks {
+        for track in tracks where !track.id.isEmpty {
             var request = MusicCatalogSearchRequest(
                 term: "\(track.artist) \(track.title) \(genre ?? "")",
                 types: [Song.self]
@@ -337,7 +338,7 @@ public class AppleMusicService {
             let response = try await request.response()
             let recommendations = response.songs
                 .map(convertToTrack)
-                .filter { rec in
+                .filter { (rec: Track) in
                     // Filter out seed tracks and duplicates
                     !tracks.contains(rec) && 
                     !allRecommendations.contains(rec)
