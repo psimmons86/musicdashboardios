@@ -26,7 +26,22 @@
 - Removed all capabilities and entitlements
 - Starting with basic app signing only
 - Testing with empty entitlements file
-- Result: Pending
+- Result: Pending - Testing basic app signing before adding any capabilities
+
+### Next Test (After Basic Signing Works):
+1. Add CloudKit capability:
+   ```xml
+   <key>com.apple.developer.icloud-services</key>
+   <array>
+       <string>CloudKit</string>
+   </array>
+   ```
+
+2. Add Music capability:
+   ```xml
+   <key>NSAppleMusicUsageDescription</key>
+   <string>Access your music library</string>
+   ```
 
 ## [Next Steps to Try]
 1. Remove all custom capabilities and start with basic app setup
