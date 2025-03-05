@@ -1,6 +1,14 @@
 import Foundation
 import MusicKit
 
+enum ServiceError: Error {
+    case unauthorized
+    case rateLimited
+    case networkError
+    case invalidResponse
+    case notFound
+}
+
 private func processInBatches<T>(_ items: [T], batchSize: Int, _ process: ([T]) async throws -> Void) async throws {
     var index = 0
     while index < items.count {
@@ -302,28 +310,62 @@ public class AppleMusicService {
     public func getAvailableGenres() async throws -> [String] {
         guard isAuthorized else { throw ServiceError.unauthorized }
         
-        var request = MusicCatalogSearchRequest(term: "genre:", types: [Song.self])
-        request.limit = 25
-        let response = try await request.response()
-        return response.songs
-            .compactMap { $0.genreNames.first }
-            .removingDuplicates()
-            .sorted()
+        // Return curated list of valid Apple Music genres
+        return [
+            "Alternative",
+            "Electronic",
+            "Hip-Hop/Rap",
+            "Indie Rock",
+            "Indie Electronic",
+            "Pop",
+            "R&B/Soul",
+            "Rock"
+        ]
     }
     
     public func generatePlaylist(from tracks: [Track], genre: String? = nil) async throws -> [Track] {
         guard isAuthorized else { throw ServiceError.unauthorized }
         
-        // Create a search request for similar songs
-        var searchTerms = tracks.prefix(3).map { "\($0.artist) \($0.title)" }.joined(separator: " ")
-        if let genre = genre {
-            searchTerms += " \(genre)"
+        var allRecommendations: [Track] = []
+        
+        // Get recommendations based on each seed track
+        for track in tracks {
+            var request = MusicCatalogSearchRequest(
+                term: "\(track.artist) \(track.title) \(genre ?? "")",
+                types: [Song.self]
+            )
+            request.limit = 10
+            
+            let response = try await request.response()
+            let recommendations = response.songs
+                .map(convertToTrack)
+                .filter { rec in
+                    // Filter out seed tracks and duplicates
+                    !tracks.contains(rec) && 
+                    !allRecommendations.contains(rec)
+                }
+            allRecommendations.append(contentsOf: recommendations)
+            
+            // Add delay between requests to avoid rate limiting
+            try await Task.sleep(nanoseconds: 500_000_000) // 0.5 second
         }
         
-        var request = MusicCatalogSearchRequest(term: searchTerms, types: [Song.self])
-        request.limit = 20
+        // If we don't have enough tracks, get more based on genre
+        if allRecommendations.count < 20, let genre = genre {
+            var request = MusicCatalogSearchRequest(term: genre, types: [Song.self])
+            request.limit = 20 - allRecommendations.count
+            
+            let response = try await request.response()
+            let genreRecommendations = response.songs
+                .map(convertToTrack)
+                .filter { rec in
+                    !tracks.contains(rec) && 
+                    !allRecommendations.contains(rec)
+                }
+            allRecommendations.append(contentsOf: genreRecommendations)
+        }
         
-        let response = try await request.response()
-        return response.songs.map(convertToTrack)
+        // Shuffle and return exactly 20 tracks
+        return Array(allRecommendations.shuffled().prefix(20))
     }
 }

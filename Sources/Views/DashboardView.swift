@@ -65,7 +65,7 @@ public struct DashboardView: View {
                                     .multilineTextAlignment(.center)
                                 
                                 StyledButton(
-                                    "Connect Apple Music",
+                                    title: "Connect Apple Music",
                                     icon: "link",
                                     action: { showingAuthSheet = true }
                                 )
@@ -354,7 +354,7 @@ private struct AuthSheet: View {
                         .padding()
                 } else {
                     StyledButton(
-                        "Sign in with Apple Music",
+                        title: "Sign in with Apple Music",
                         icon: "arrow.right.circle.fill",
                         action: {
                             isLoading = true

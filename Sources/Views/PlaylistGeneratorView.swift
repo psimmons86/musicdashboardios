@@ -13,6 +13,18 @@ public struct PlaylistGeneratorView: View {
     
     public init() {}
     
+    private var selectionOverlay: some View {
+        Circle()
+            .fill(AppTheme.accent)
+            .frame(width: 24, height: 24)
+            .overlay(
+                Image(systemName: "checkmark")
+                    .font(.caption)
+                    .foregroundColor(.white)
+            )
+            .padding(8)
+    }
+    
     public var body: some View {
         NavigationStack {
             ScrollView {
@@ -61,28 +73,21 @@ public struct PlaylistGeneratorView: View {
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     LazyHStack(spacing: 16) {
                                         ForEach(searchResults) { track in
-                                            TrackCard(track: track)
-                                                .onTapGesture {
-                                                    if selectedTracks.contains(track) {
+                                            let isSelected = selectedTracks.contains(track)
+                                            TrackCard(
+                                                track: track,
+                                                action: {
+                                                    if isSelected {
                                                         selectedTracks.removeAll { $0.id == track.id }
                                                     } else if selectedTracks.count < 5 {
                                                         selectedTracks.append(track)
                                                     }
                                                 }
-                                                .overlay(
-                                                    selectedTracks.contains(track) ?
-                                                    Circle()
-                                                        .fill(AppTheme.accent)
-                                                        .frame(width: 24, height: 24)
-                                                        .overlay(
-                                                            Image(systemName: "checkmark")
-                                                                .font(.caption)
-                                                                .foregroundColor(.white)
-                                                        )
-                                                        .padding(8)
-                                                    : nil,
-                                                    alignment: .topTrailing
-                                                )
+                                            )
+                                            .overlay(
+                                                isSelected ? selectionOverlay : nil,
+                                                alignment: .topTrailing
+                                            )
                                         }
                                     }
                                     .padding(.horizontal)
@@ -101,17 +106,19 @@ public struct PlaylistGeneratorView: View {
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     LazyHStack(spacing: 16) {
                                         ForEach(selectedTracks) { track in
-                                            TrackCard(track: track)
-                                                .onTapGesture {
+                                            TrackCard(
+                                                track: track,
+                                                action: {
                                                     selectedTracks.removeAll { $0.id == track.id }
                                                 }
-                                                .overlay(
-                                                    Image(systemName: "xmark.circle.fill")
-                                                        .font(.title3)
-                                                        .foregroundColor(.white)
-                                                        .padding(8),
-                                                    alignment: .topTrailing
-                                                )
+                                            )
+                                            .overlay(
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.title3)
+                                                    .foregroundColor(.white)
+                                                    .padding(8),
+                                                alignment: .topTrailing
+                                            )
                                         }
                                     }
                                     .padding(.horizontal)
@@ -119,7 +126,7 @@ public struct PlaylistGeneratorView: View {
                             }
                             
                             StyledButton(
-                                "Generate Playlist",
+                                title: "Generate Playlist",
                                 icon: "wand.and.stars",
                                 action: generatePlaylist
                             )
@@ -138,7 +145,10 @@ public struct PlaylistGeneratorView: View {
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     LazyHStack(spacing: 16) {
                                         ForEach(generatedPlaylist) { track in
-                                            TrackCard(track: track)
+                                            TrackCard(
+                                                track: track,
+                                                action: {}
+                                            )
                                         }
                                     }
                                     .padding(.horizontal)

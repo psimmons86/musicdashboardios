@@ -34,41 +34,14 @@ targets:
         ENABLE_PREVIEWS: YES
         OTHER_SWIFT_FLAGS: "-Xfrontend -warn-long-function-bodies=100"
         CODE_SIGN_ENTITLEMENTS: Sources/MusicDashboard.entitlements
+        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         ENABLE_BACKGROUND_MODES: YES
         INFOPLIST_KEY_UIBackgroundModes:
           - audio
           - fetch
-        PRODUCT_BUNDLE_CAPABILITIES:
-          - com.apple.developer.playable-content
-          - com.apple.developer.music-kit
+        PRODUCT_BUNDLE_CAPABILITIES: []
     entitlements:
       path: Sources/MusicDashboard.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.personal-information.music-library: true
-        com.apple.developer.music-kit: true
-        com.apple.developer.playable-content: true
-        com.apple.runningboard.sonic: true
-        com.apple.security.temporary-exception.mach-lookup.global-name: 
-          - com.apple.identityservicesd
-          - com.apple.accountsd
-          - com.apple.musicstorefrontend
-          - com.apple.coreservices.appleaccountd
-          - com.apple.askpermissiond
-        com.apple.security.temporary-exception.files.home-relative-path.read-write:
-          - Library/Application Support/com.apple.MediaPlayer/ServerObjectDatabases
-          - Library/Caches/com.apple.Music
-          - Library/Accounts
-          - Library/Preferences/com.apple.accounts.plist
-        com.apple.security.temporary-exception.apple-events:
-          - com.apple.iTunes
-          - com.apple.Music
-          - com.apple.accountsd
-        com.apple.security.application-groups:
-          - group.com.musicdashboard.app
-        com.apple.security.temporary-exception.sbpl:
-          - (allow mach-lookup (global-name "com.apple.accountsd"))
-          - (allow file-read* file-write* (subpath "/private/var/mobile/Library/Accounts"))
     
     info:
       path: Sources/Info.plist

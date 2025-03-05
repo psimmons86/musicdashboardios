@@ -1,178 +1,249 @@
 import SwiftUI
 
-@available(iOS 17.0, *)
-public struct TrackRow: View {
-    let track: Track
-    let isSelected: Bool
-    let onTap: (() -> Void)?
+struct NewsArticleRow: View {
+    let article: NewsArticle
     
-    public init(track: Track, isSelected: Bool, onTap: (() -> Void)?) {
-        self.track = track
-        self.isSelected = isSelected
-        self.onTap = onTap
-    }
-    
-    public var body: some View {
-        Button {
-            onTap?()
-        } label: {
-            HStack(spacing: 12) {
-                AsyncImage(url: track.artworkURLForSize(width: 60, height: 60)) { image in
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let urlToImage = article.urlToImage,
+               let imageURL = URL(string: urlToImage) {
+                AsyncImage(url: imageURL) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
+                        .frame(height: 180)
+                        .clipped()
                 } placeholder: {
-                    Color(AppTheme.surfaceBackground)
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 180)
                 }
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .shadow(color: AppTheme.shadowColor, radius: 4, y: 2)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(article.title)
+                    .font(.headline)
+                    .lineLimit(2)
+                
+                if let description = article.description {
+                    Text(description)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(3)
+                }
+                
+                HStack {
+                    Text(article.source.name)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text(article.publishedAt)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal)
+        }
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 2)
+    }
+}
+
+public struct QuickActionCard: View {
+    let title: String
+    let systemImage: String
+    let gradient: LinearGradient
+    
+    public init(
+        title: String,
+        systemImage: String,
+        gradient: LinearGradient
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.gradient = gradient
+    }
+    
+    public var body: some View {
+        VStack(alignment: .leading, spacing: AppTheme.paddingSmall) {
+            Image(systemName: systemImage)
+                .font(.title)
+                .foregroundColor(AppTheme.textPrimary)
+            
+            Text(title)
+                .font(.headline)
+                .foregroundColor(AppTheme.textPrimary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(AppTheme.paddingMedium)
+        .background(gradient)
+        .clipShape(AppTheme.cardShape)
+        .shadow(color: AppTheme.shadowColor, radius: AppTheme.shadowRadius / 2, y: AppTheme.shadowY / 2)
+    }
+}
+
+struct TrackCard: View {
+    let track: Track
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                if let artworkURL = track.artworkURLForSize(width: 60, height: 60) {
+                    AsyncImage(url: artworkURL) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 60, height: 60)
+                            .cornerRadius(8)
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: 60, height: 60)
+                            .cornerRadius(8)
+                    }
+                }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(track.title)
                         .font(.headline)
-                        .foregroundColor(AppTheme.textPrimary)
                         .lineLimit(1)
                     
                     Text(track.artist)
                         .font(.subheadline)
-                        .foregroundColor(AppTheme.textSecondary)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    
+                    Text(track.albumTitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
                 
                 Spacer()
                 
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(AppTheme.accent)
-                }
+                Image(systemName: "play.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.accentColor)
             }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(radius: 2)
         }
-        .buttonStyle(.plain)
     }
 }
 
-@available(iOS 17.0, *)
-private struct TagView: View {
-    let text: String
-    
-    var body: some View {
-        Text(text)
-            .font(.caption)
-            .foregroundColor(AppTheme.textSecondary)
-            .padding(.horizontal, AppTheme.paddingSmall)
-            .padding(.vertical, 4)
-            .background(AppTheme.surfaceBackground.opacity(0.6))
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(AppTheme.textSecondary.opacity(0.2), lineWidth: 1)
-            )
-    }
-}
-
-@available(iOS 17.0, *)
 public struct PlaylistRow: View {
     let playlist: Playlist
+    let onTap: (() -> Void)?
     
-    public init(playlist: Playlist) {
+    public init(playlist: Playlist, onTap: (() -> Void)? = nil) {
         self.playlist = playlist
+        self.onTap = onTap
     }
     
     public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(playlist.name)
-                .font(.headline)
-                .foregroundColor(AppTheme.textPrimary)
-            
-            if let description = playlist.description {
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundColor(AppTheme.textSecondary)
-                    .lineLimit(2)
-            }
-            
-            HStack(spacing: AppTheme.paddingSmall) {
-                if let genre = playlist.genre {
-                    TagView(text: genre)
+        Button(action: { onTap?() }) {
+            VStack(alignment: .leading, spacing: AppTheme.paddingSmall) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(playlist.name)
+                            .font(.headline)
+                            .foregroundColor(AppTheme.textPrimary)
+                            .lineLimit(1)
+                        
+                        if let description = playlist.description {
+                            Text(description)
+                                .font(.subheadline)
+                                .foregroundColor(AppTheme.textSecondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Text("\(playlist.tracks.count) tracks")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
                 
-                if let mood = playlist.mood {
-                    TagView(text: mood.rawValue.capitalized)
-                }
-                
-                if let tempo = playlist.tempo {
-                    TagView(text: "\(tempo) BPM")
+                HStack(spacing: AppTheme.paddingSmall) {
+                    // Type badge
+                    Text(playlist.type.rawValue.capitalized)
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AppTheme.accent.opacity(0.2))
+                        .foregroundColor(AppTheme.accent)
+                        .clipShape(Capsule())
+                    
+                    // Mood badge if available
+                    if let mood = playlist.mood {
+                        Text(mood.rawValue.capitalized)
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(AppTheme.info.opacity(0.2))
+                            .foregroundColor(AppTheme.info)
+                            .clipShape(Capsule())
+                    }
+                    
+                    Spacer()
+                    
+                    // Creation date
+                    Text(playlist.createdAt, style: .date)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
-        }
-    }
-}
-
-@available(iOS 17.0, *)
-public struct StyledCard<Content: View>: View {
-    let content: Content
-    
-    public init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-    
-    public var body: some View {
-        content
+            .padding(AppTheme.paddingMedium)
             .background(AppTheme.surfaceBackground)
             .clipShape(AppTheme.cardShape)
-            .shadow(
-                color: AppTheme.shadowColor,
-                radius: AppTheme.shadowRadius,
-                x: 0,
-                y: AppTheme.shadowY
-            )
+            .shadow(color: AppTheme.shadowColor, radius: AppTheme.shadowRadius / 2, y: AppTheme.shadowY / 2)
+        }
     }
 }
 
-@available(iOS 17.0, *)
-public struct StyledButton: View {
-    let title: String
-    let icon: String
-    let action: () -> Void
+public struct SearchBar: View {
+    @Binding var text: String
+    let placeholder: String
+    let onSubmit: (() -> Void)?
     
-    public init(_ title: String, icon: String, action: @escaping () -> Void) {
-        self.title = title
-        self.icon = icon
-        self.action = action
+    public init(
+        text: Binding<String>,
+        placeholder: String,
+        onSubmit: (() -> Void)? = nil
+    ) {
+        self._text = text
+        self.placeholder = placeholder
+        self.onSubmit = onSubmit
     }
     
     public var body: some View {
-        Button(action: action) {
-            HStack(spacing: AppTheme.paddingSmall) {
-                Image(systemName: icon)
-                Text(title)
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+            
+            TextField(placeholder, text: $text)
+                .textFieldStyle(PlainTextFieldStyle())
+                .onSubmit {
+                    onSubmit?()
+                }
+            
+            if !text.isEmpty {
+                Button(action: { text = "" }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                }
             }
-            .font(.headline)
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, AppTheme.paddingMedium)
-            .padding(.horizontal, AppTheme.paddingLarge)
-            .background(
-                AppTheme.accent
-                    .opacity(0.9)
-            )
-            .clipShape(AppTheme.buttonShape)
-            .shadow(
-                color: AppTheme.accent.opacity(0.3),
-                radius: 8,
-                y: 4
-            )
         }
-        .buttonStyle(ScaleButtonStyle())
-    }
-}
-
-@available(iOS 17.0, *)
-private struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(AppTheme.defaultAnimation, value: configuration.isPressed)
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color(.systemGray6))
+        .cornerRadius(10)
     }
 }
