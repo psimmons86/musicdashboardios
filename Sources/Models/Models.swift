@@ -108,7 +108,7 @@ public struct PlaylistPreferences: Codable {
 }
 
 // MARK: - Streaming Stats
-public struct StreamingStats: Codable {
+public struct StreamingStats: Codable, Equatable {
     public let totalListeningTime: Int // in minutes
     public let topArtists: [ArtistStats]
     public let topTracks: [TrackStats]
@@ -124,7 +124,7 @@ public struct StreamingStats: Codable {
     }
 }
 
-public struct ArtistStats: Codable, Identifiable {
+public struct ArtistStats: Codable, Identifiable, Equatable {
     public let id: String
     public let name: String
     public let playCount: Int
@@ -140,7 +140,7 @@ public struct ArtistStats: Codable, Identifiable {
     }
 }
 
-public struct TrackStats: Codable, Identifiable {
+public struct TrackStats: Codable, Identifiable, Equatable {
     public let id: String
     public let track: Track
     public let playCount: Int
@@ -156,7 +156,7 @@ public struct TrackStats: Codable, Identifiable {
     }
 }
 
-public struct WeeklyStats: Codable {
+public struct WeeklyStats: Codable, Equatable {
     public let weekStartDate: Date
     public let totalTracks: Int
     public let totalArtists: Int
@@ -176,7 +176,7 @@ public struct WeeklyStats: Codable {
     }
 }
 
-public struct ListeningSession: Codable, Identifiable {
+public struct ListeningSession: Codable, Identifiable, Equatable {
     public let id: String
     public let startTime: Date
     public let duration: Int // in minutes

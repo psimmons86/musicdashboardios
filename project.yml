@@ -6,8 +6,6 @@ options:
   xcodeVersion: "14.0"
   createIntermediateGroups: true
   moduleName: MusicDashboard
-  moduleAliases:
-    CloudKitService: MusicDashboard
 
 settings:
   base:
@@ -50,6 +48,7 @@ targets:
           - com.apple.developer.icloud-container-environment
         PRODUCT_SPECIFIC_CAPABILITIES:
           - iCloud.com.musicdashboard.stats
+        ICLOUD_CONTAINER_ENVIRONMENT: Production
     
     info:
       path: Sources/Info.plist

@@ -18,14 +18,12 @@ public struct DashboardView: View {
     public var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 32) { // Increased spacing between main sections
                     if isLoading {
                         ProgressView()
                             .padding()
                     } else if let error = errorMessage {
-                        Text(error)
-                            .foregroundColor(AppTheme.error)
-                            .padding()
+                        ErrorView(message: error)
                     } else {
                         // Service Connection Status
                         ServiceConnectionCard(
@@ -35,46 +33,34 @@ public struct DashboardView: View {
                         .padding(.horizontal)
                         
                         if isAuthorized {
-                            // Widgets Grid
-                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                                RecentlyPlayedWidget(tracks: recentlyPlayed)
-                                TopTracksWidget(tracks: topTracks)
-                                
-                                MusicNewsWidget(
-                                    newsArticles: newsArticles,
-                                    availableGenres: availableGenres,
-                                    selectedGenre: selectedNewsGenre,
-                                    onGenreSelected: { genre in
-                                        selectedNewsGenre = genre
-                                        Task { await loadDashboard() }
-                                    }
-                                )
-                                
-                                QuickActionsWidget()
-                            }
-                            .padding(.vertical)
-                        } else {
-                            VStack(spacing: 16) {
-                                Image(systemName: "music.mic")
-                                    .font(.system(size: 48))
-                                    .foregroundColor(AppTheme.textSecondary)
-                                
-                                Text("Connect to Apple Music to view your music stats")
-                                    .font(.headline)
-                                    .foregroundColor(AppTheme.textPrimary)
-                                    .multilineTextAlignment(.center)
-                                
-                                StyledButton(
-                                    title: "Connect Apple Music",
-                                    icon: "link",
-                                    action: { showingAuthSheet = true }
-                                )
+                            // Quick Actions
+                            QuickActionsSection()
                                 .padding(.horizontal)
-                            }
-                            .padding()
+                            
+                            // Music Stats
+                            MusicStatsSection(
+                                recentlyPlayed: recentlyPlayed,
+                                topTracks: topTracks
+                            )
+                            .padding(.horizontal)
+                            
+                            // News Section
+                            NewsSection(
+                                newsArticles: newsArticles,
+                                availableGenres: availableGenres,
+                                selectedGenre: selectedNewsGenre,
+                                onGenreSelected: { genre in
+                                    selectedNewsGenre = genre
+                                    Task { await loadDashboard() }
+                                }
+                            )
+                            .padding(.horizontal)
+                        } else {
+                            ConnectPromptView(onConnect: { showingAuthSheet = true })
                         }
                     }
                 }
+                .padding(.vertical, 24) // Add padding at top and bottom
             }
             .navigationTitle("Dashboard")
             .onAppear {
@@ -87,7 +73,7 @@ public struct DashboardView: View {
                 await checkAuthorization()
                 await loadDashboard()
             }
-            .background(AppTheme.darkBackground)
+            .background(Color(UIColor.systemBackground))
         }
         .sheet(isPresented: $showingAuthSheet) {
             AuthSheet()
@@ -104,230 +90,360 @@ public struct DashboardView: View {
         isLoading = true
         errorMessage = nil
         
-        // Load Apple Music data first
         do {
-            let (recent, top) = try await (
-                AppleMusicService.shared.getRecentlyPlayed(),
-                AppleMusicService.shared.getTopTracks()
-            )
+            async let recentlyPlayedTask = AppleMusicService.shared.getRecentlyPlayed()
+            async let topTracksTask = AppleMusicService.shared.getTopTracks()
+            async let newsTask = NewsService.shared.getMusicNews(genre: selectedNewsGenre)
+            async let genresTask = NewsService.shared.getAvailableGenres()
+            
+            let (recent, top, news, genres) = try await (recentlyPlayedTask, topTracksTask, newsTask, genresTask)
+            
             recentlyPlayed = recent
             topTracks = top
-            
-            // Try to load news data, but don't let it block the dashboard
-            Task {
-                do {
-                    let (genres, news) = try await (
-                        NewsService.shared.getAvailableGenres(),
-                        NewsService.shared.getMusicNews(genre: selectedNewsGenre)
-                    )
-                    availableGenres = genres
-                    newsArticles = news
-                } catch {
-                    print("Failed to load news: \(error)")
-                }
-            }
+            newsArticles = news
+            availableGenres = genres
             
             isLoading = false
         } catch {
             print("Dashboard load error: \(error)")
-            errorMessage = "Failed to load music data. Please check your Apple Music connection."
+            errorMessage = "Failed to load music data. Please check your connection."
             isLoading = false
         }
     }
 }
 
+// MARK: - Error View
 @available(iOS 17.0, *)
-private struct RecentlyPlayedWidget: View {
-    let tracks: [Track]
+private struct ErrorView: View {
+    let message: String
     
     var body: some View {
-        StyledCard {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.red)
+            
+            Text(message)
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+    }
+}
+
+// MARK: - Connect Prompt
+@available(iOS 17.0, *)
+private struct ConnectPromptView: View {
+    let onConnect: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "music.mic")
+                .font(.system(size: 64))
+                .foregroundStyle(.linearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+            
+            Text("Connect to Apple Music")
+                .font(.title2.weight(.bold))
+                .foregroundColor(.primary)
+            
+            Text("View your music stats, generate playlists, and discover new music")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            Button(action: onConnect) {
+                HStack {
+                    Image(systemName: "link")
+                    Text("Connect")
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(.purple.gradient)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .padding(.horizontal, 32)
+        }
+        .padding(32)
+        .background(RoundedRectangle(cornerRadius: 24).fill(.ultraThinMaterial))
+        .padding()
+    }
+}
+
+// MARK: - Quick Actions Section
+@available(iOS 17.0, *)
+private struct QuickActionsSection: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Quick Actions")
+                .font(.title2.weight(.bold))
+            
+            HStack(spacing: 16) {
+                NavigationLink(destination: PlaylistGeneratorView()) {
+                    QuickActionButton(
+                        title: "Generate Playlist",
+                        icon: "wand.and.stars",
+                        gradient: [Color.purple, Color.blue]
+                    )
+                }
+                
+                NavigationLink(destination: StreamingStatsView()) {
+                    QuickActionButton(
+                        title: "View Stats",
+                        icon: "chart.bar.fill",
+                        gradient: [Color.orange, Color.red]
+                    )
+                }
+            }
+        }
+    }
+}
+
+@available(iOS 17.0, *)
+private struct QuickActionButton: View {
+    let title: String
+    let icon: String
+    let gradient: [Color]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: icon)
+                .font(.title)
+                .foregroundColor(.white)
+            
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.white)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
+        )
+    }
+}
+
+// MARK: - Music Stats Section
+@available(iOS 17.0, *)
+private struct MusicStatsSection: View {
+    let recentlyPlayed: [Track]
+    let topTracks: [Track]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Recently Played
+            VStack(alignment: .leading, spacing: 16) {
                 Text("Recently Played")
-                    .font(.headline)
-                    .foregroundColor(AppTheme.textPrimary)
+                    .font(.title2.weight(.bold))
                 
-                if tracks.isEmpty {
+                if recentlyPlayed.isEmpty {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 } else {
-                    ForEach(tracks.prefix(3)) { track in
-                        TrackRow(track: track, isSelected: false, onTap: nil)
-                        if track.id != tracks.prefix(3).last?.id {
-                            Divider()
-                        }
+                    ForEach(recentlyPlayed.prefix(3)) { track in
+                        TrackRowModern(track: track)
+                    }
+                }
+            }
+            
+            // Top Tracks
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Top Tracks")
+                    .font(.title2.weight(.bold))
+                
+                if topTracks.isEmpty {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                } else {
+                    ForEach(topTracks.prefix(3)) { track in
+                        TrackRowModern(track: track)
                     }
                 }
             }
         }
-        .padding(.horizontal, 8)
     }
 }
 
 @available(iOS 17.0, *)
-private struct TopTracksWidget: View {
-    let tracks: [Track]
+private struct TrackRowModern: View {
+    let track: Track
     
     var body: some View {
-        StyledCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Top Tracks")
-                    .font(.headline)
-                    .foregroundColor(AppTheme.textPrimary)
-                
-                if tracks.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                } else {
-                    ForEach(tracks.prefix(3)) { track in
-                        TrackRow(track: track, isSelected: false, onTap: nil)
-                        if track.id != tracks.prefix(3).last?.id {
-                            Divider()
-                        }
-                    }
-                }
+        HStack(spacing: 16) {
+            AsyncImage(url: URL(string: track.artworkURL)) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Color.gray.opacity(0.2)
             }
+            .frame(width: 56, height: 56)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(track.title)
+                    .font(.headline)
+                    .lineLimit(1)
+                
+                Text(track.artist)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            
+            Image(systemName: "play.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 8)
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
     }
 }
 
+// MARK: - News Section
 @available(iOS 17.0, *)
-private struct MusicNewsWidget: View {
+private struct NewsSection: View {
     let newsArticles: [NewsArticle]
     let availableGenres: [String]
     let selectedGenre: String?
     let onGenreSelected: (String?) -> Void
     
     var body: some View {
-        StyledCard {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Music News")
-                        .font(.headline)
-                        .foregroundColor(AppTheme.textPrimary)
-                    
-                    Spacer()
-                    
-                    Menu {
-                        Button("All Genres") {
-                            onGenreSelected(nil)
-                        }
-                        Divider()
-                        ForEach(availableGenres, id: \.self) { genre in
-                            Button(genre) {
-                                onGenreSelected(genre)
-                            }
-                        }
-                    } label: {
-                        Label(selectedGenre ?? "All Genres", systemImage: "line.3.horizontal.decrease.circle")
-                            .font(.subheadline)
-                            .foregroundColor(AppTheme.accent)
-                    }
-                }
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Music News")
+                    .font(.title2.weight(.bold))
                 
-                if newsArticles.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                } else {
-                    ForEach(newsArticles.prefix(3)) { article in
-                        NewsArticleRow(article: article)
-                        if article.id != newsArticles.prefix(3).last?.id {
-                            Divider()
+                Spacer()
+                
+                Menu {
+                    Button("All Genres") {
+                        onGenreSelected(nil)
+                    }
+                    ForEach(availableGenres, id: \.self) { genre in
+                        Button(genre) {
+                            onGenreSelected(genre)
                         }
                     }
+                } label: {
+                    HStack {
+                        Text(selectedGenre ?? "All Genres")
+                        Image(systemName: "chevron.down")
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
+            
+            if newsArticles.isEmpty {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+            } else {
+                ForEach(newsArticles.prefix(3)) { article in
+                    NewsArticleRowModern(article: article)
                 }
             }
         }
-        .padding(.horizontal, 8)
     }
 }
 
 @available(iOS 17.0, *)
-private struct QuickActionsWidget: View {
+private struct NewsArticleRowModern: View {
+    let article: NewsArticle
+    
     var body: some View {
-        StyledCard {
+        VStack(alignment: .leading, spacing: 12) {
+            AsyncImage(url: URL(string: article.urlToImage ?? "")) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Color.gray.opacity(0.2)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 160)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            
             VStack(alignment: .leading, spacing: 8) {
-                Text("Quick Actions")
+                Text(article.title)
                     .font(.headline)
-                    .foregroundColor(AppTheme.textPrimary)
+                    .lineLimit(2)
                 
-                HStack(spacing: 12) {
-                    NavigationLink(destination: PlaylistGeneratorView()) {
-                        QuickActionCard(
-                            title: "Generate",
-                            systemImage: "wand.and.stars",
-                            gradient: LinearGradient(
-                                colors: [Color(hex: "4A90E2"), Color(hex: "1E62B0")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    }
+                if let description = article.description {
+                    Text(description)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                }
+                
+                HStack {
+                    Text(article.source.name)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     
-                    NavigationLink(destination: StreamingStatsView()) {
-                        QuickActionCard(
-                            title: "Stats",
-                            systemImage: "chart.bar.fill",
-                            gradient: LinearGradient(
-                                colors: [Color(hex: "9B59B6"), Color(hex: "6C3483")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    }
+                    Spacer()
+                    
+                    Text(article.publishedAt)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
+            .padding(.horizontal)
         }
-        .padding(.horizontal, 8)
+        .background(RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial))
     }
 }
 
+// MARK: - Service Connection Card
 @available(iOS 17.0, *)
 private struct ServiceConnectionCard: View {
     let isConnected: Bool
     let onConnect: () -> Void
     
     var body: some View {
-        StyledCard {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Image(systemName: "music.mic")
-                            .font(.title2)
-                        Text("Apple Music")
-                            .font(.headline)
-                    }
-                    .foregroundColor(AppTheme.textPrimary)
-                    
-                    Text(isConnected ? "Connected" : "Not connected")
-                        .font(.subheadline)
-                        .foregroundColor(isConnected ? Color.green : AppTheme.textSecondary)
-                }
+        HStack(spacing: 16) {
+            Image(systemName: "music.mic")
+                .font(.title)
+                .foregroundStyle(.purple.gradient)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Apple Music")
+                    .font(.headline)
                 
-                Spacer()
-                
-                if !isConnected {
-                    Button(action: onConnect) {
-                        Text("Connect")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(AppTheme.accent)
-                            .clipShape(Capsule())
-                    }
-                } else {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                        .font(.title2)
-                }
+                Text(isConnected ? "Connected" : "Not connected")
+                    .font(.subheadline)
+                    .foregroundColor(isConnected ? .green : .secondary)
             }
-            .padding()
+            
+            Spacer()
+            
+            if !isConnected {
+                Button(action: onConnect) {
+                    Text("Connect")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(.purple.gradient)
+                        .clipShape(Capsule())
+                }
+            } else {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.title2)
+            }
         }
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial))
     }
 }
 
+// MARK: - Auth Sheet
 @available(iOS 17.0, *)
 private struct AuthSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -336,53 +452,59 @@ private struct AuthSheet: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
+            VStack(spacing: 32) {
                 Image(systemName: "music.mic")
-                    .font(.system(size: 64))
-                    .foregroundColor(AppTheme.accent)
+                    .font(.system(size: 72))
+                    .foregroundStyle(.purple.gradient)
                 
-                Text("Connect to Apple Music")
-                    .font(.title2)
-                    .bold()
-                    .foregroundColor(AppTheme.textPrimary)
-                
-                Text("Sign in to access your music library, playlists, and listening history")
-                    .font(.body)
-                    .foregroundColor(AppTheme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+                VStack(spacing: 16) {
+                    Text("Connect to Apple Music")
+                        .font(.title.weight(.bold))
+                    
+                    Text("Sign in to access your music library, playlists, and listening history")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
                 
                 if isLoading {
                     ProgressView()
                 } else if let error = errorMessage {
                     Text(error)
-                        .foregroundColor(AppTheme.error)
+                        .foregroundColor(.red)
                         .padding()
                 } else {
-                    StyledButton(
-                        title: "Sign in with Apple Music",
-                        icon: "arrow.right.circle.fill",
-                        action: {
-                            isLoading = true
-                            errorMessage = nil
-                            Task {
-                                let status = await MusicAuthorization.request()
-                                if status == .authorized {
-                                    // Test connection
-                                    do {
-                                        _ = try await AppleMusicService.shared.getTopTracks()
-                                        dismiss()
-                                    } catch {
-                                        errorMessage = "Failed to connect to Apple Music"
-                                    }
-                                } else {
-                                    errorMessage = "Apple Music access not authorized"
+                    Button(action: {
+                        isLoading = true
+                        errorMessage = nil
+                        Task {
+                            let status = await MusicAuthorization.request()
+                            if status == .authorized {
+                                do {
+                                    _ = try await AppleMusicService.shared.getTopTracks()
+                                    dismiss()
+                                } catch {
+                                    errorMessage = "Failed to connect to Apple Music"
                                 }
-                                isLoading = false
+                            } else {
+                                errorMessage = "Apple Music access not authorized"
                             }
+                            isLoading = false
                         }
-                    )
-                    .padding(.horizontal)
+                    }) {
+                        HStack {
+                            Text("Sign in with Apple Music")
+                            Image(systemName: "arrow.right")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(.purple.gradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+                    .padding(.horizontal, 32)
                 }
             }
             .padding()
@@ -402,6 +524,5 @@ private struct AuthSheet: View {
 public struct DashboardView_Previews: PreviewProvider {
     public static var previews: some View {
         DashboardView()
-            .preferredColorScheme(.dark)
     }
 }

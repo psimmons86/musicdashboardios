@@ -1,106 +1,104 @@
 import CloudKit
 import Foundation
+import AppKit
 
-// MARK: - Schema Setup
-
-class CloudKitSchemaSetup {
+class SchemaSetup: NSObject, NSApplicationDelegate {
     let container: CKContainer
     let database: CKDatabase
     
-    init() {
+    override init() {
         container = CKContainer(identifier: "iCloud.com.musicdashboard.stats")
         database = container.privateCloudDatabase
+        super.init()
     }
     
-    func setupSchema() async throws {
-        print("Setting up CloudKit schema...")
-        
-        // Create Track record type
-        try await createTrackRecordType()
-        print("✓ Created Track record type")
-        
-        // Create ListeningSession record type
-        try await createListeningSessionRecordType()
-        print("✓ Created ListeningSession record type")
-        
-        print("Schema setup complete!")
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        print("[CloudKit] Starting setup script...")
+        checkContainerAccess()
     }
     
-    private func createTrackRecordType() async throws {
-        let recordType = "Track"
-        
-        // Define fields
-        let fields: [(String, CKRecordFieldType)] = [
-            ("id", .string),
-            ("title", .string),
-            ("artist", .string),
-            ("albumTitle", .string),
-            ("artworkURL", .string),
-            ("playCount", .int64),
-            ("lastPlayed", .date)
-        ]
-        
-        // Create sample record to establish schema
-        let record = CKRecord(recordType: recordType)
-        
-        // Set sample values for each field
-        for (field, type) in fields {
-            switch type {
-            case .string:
-                record[field] = "sample"
-            case .int64:
-                record[field] = 0
-            case .date:
-                record[field] = Date()
-            default:
-                break
+    func checkContainerAccess() {
+        print("[CloudKit] Checking container access...")
+        container.accountStatus { (accountStatus, error) in
+            if let error = error {
+                print("[CloudKit] Error checking account status: \(error)")
+                NSApplication.shared.terminate(nil)
+                return
             }
+            
+            guard accountStatus == .available else {
+                print("[CloudKit] iCloud account not available. Status: \(accountStatus)")
+                NSApplication.shared.terminate(nil)
+                return
+            }
+            
+            print("[CloudKit] ✓ Container access verified")
+            self.createTrackRecord()
         }
-        
-        // Save record to establish schema
-        try await database.save(record)
-        print("Created Track schema with fields: \(fields.map { $0.0 }.joined(separator: ", "))")
     }
     
-    private func createListeningSessionRecordType() async throws {
-        let recordType = "ListeningSession"
+    func createTrackRecord() {
+        print("[CloudKit] Creating Track record type...")
+        let trackRecord = CKRecord(recordType: "Track")
+        trackRecord["id"] = "sample-id" as CKRecordValue
+        trackRecord["title"] = "Sample Title" as CKRecordValue
+        trackRecord["artist"] = "Sample Artist" as CKRecordValue
+        trackRecord["albumTitle"] = "Sample Album" as CKRecordValue
+        trackRecord["artworkURL"] = "https://example.com/artwork.jpg" as CKRecordValue
+        trackRecord["playCount"] = 0 as CKRecordValue
+        trackRecord["lastPlayed"] = Date() as CKRecordValue
         
-        // Define fields
-        let fields: [(String, CKRecordFieldType)] = [
-            ("startTime", .date),
-            ("duration", .int64),
-            ("trackIds", .string) // Will store as comma-separated string
-        ]
-        
-        // Create sample record to establish schema
-        let record = CKRecord(recordType: recordType)
-        
-        // Set sample values for each field
-        for (field, type) in fields {
-            switch type {
-            case .string:
-                record[field] = "sample"
-            case .int64:
-                record[field] = 0
-            case .date:
-                record[field] = Date()
-            default:
-                break
+        print("[CloudKit] Saving Track record...")
+        database.save(trackRecord) { (record, error) in
+            if let error = error {
+                print("[CloudKit] Error saving Track record: \(error)")
+                if let cloudError = error as? CKError {
+                    print("[CloudKit] CloudKit error code: \(cloudError.errorCode)")
+                    print("[CloudKit] Error description: \(cloudError.localizedDescription)")
+                    for (key, value) in cloudError.errorUserInfo {
+                        print("[CloudKit] Error info - \(key): \(value)")
+                    }
+                }
+                NSApplication.shared.terminate(nil)
+                return
             }
+            
+            print("[CloudKit] ✓ Created Track record type")
+            self.createListeningSessionRecord()
         }
+    }
+    
+    func createListeningSessionRecord() {
+        print("[CloudKit] Creating ListeningSession record type...")
+        let sessionRecord = CKRecord(recordType: "ListeningSession")
+        sessionRecord["startTime"] = Date() as CKRecordValue
+        sessionRecord["duration"] = 180 as CKRecordValue
+        sessionRecord["trackIds"] = "sample-id-1,sample-id-2" as CKRecordValue
         
-        // Save record to establish schema
-        try await database.save(record)
-        print("Created ListeningSession schema with fields: \(fields.map { $0.0 }.joined(separator: ", "))")
+        print("[CloudKit] Saving ListeningSession record...")
+        database.save(sessionRecord) { (record, error) in
+            if let error = error {
+                print("[CloudKit] Error saving ListeningSession record: \(error)")
+                if let cloudError = error as? CKError {
+                    print("[CloudKit] CloudKit error code: \(cloudError.errorCode)")
+                    print("[CloudKit] Error description: \(cloudError.localizedDescription)")
+                    for (key, value) in cloudError.errorUserInfo {
+                        print("[CloudKit] Error info - \(key): \(value)")
+                    }
+                }
+                NSApplication.shared.terminate(nil)
+                return
+            }
+            
+            print("[CloudKit] ✓ Created ListeningSession record type")
+            print("[CloudKit] Schema setup complete!")
+            NSApplication.shared.terminate(nil)
+        }
     }
 }
 
-// MARK: - Run Setup
-
-@main
-struct SchemaSetup {
-    static func main() async throws {
-        let setup = CloudKitSchemaSetup()
-        try await setup.setupSchema()
-    }
-}
+// Create and run application
+let app = NSApplication.shared
+let setup = SchemaSetup()
+app.delegate = setup
+_ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
