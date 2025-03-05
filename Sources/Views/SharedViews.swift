@@ -1,9 +1,5 @@
 import SwiftUI
 import MusicKit
-import CloudKit
-
-// Import CloudKitService for play count tracking
-import MusicDashboard
 
 struct NewsArticleRow: View {
     let article: NewsArticle
@@ -170,16 +166,15 @@ public struct TrackCard: View {
                 
                 if let song = response.songs.first {
                     if isPlaying {
-                        try await MusicPlayer.shared.stop()
+                        try await MusicKit.MusicPlayer.shared.stop()
                         isPlaying = false
                     } else {
-                        try await MusicPlayer.shared.queue = [song]
-                        try await MusicPlayer.shared.play()
+                        try await MusicKit.MusicPlayer.shared.queue = [song]
+                        try await MusicKit.MusicPlayer.shared.play()
                         isPlaying = true
                         
-                        // Track play count
-                        try await CloudKitService.shared.incrementPlayCount(for: track)
-                        print("[Player] Tracked play for: \(track.title)")
+                        // TODO: Re-enable CloudKit tracking once basic functionality works
+                        print("[Player] Playing track: \(track.title)")
                     }
                 } else {
                     errorMessage = "Track not found in Apple Music"
