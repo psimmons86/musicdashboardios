@@ -4,7 +4,7 @@
 <dict>
     <key>com.apple.developer.icloud-container-identifiers</key>
     <array>
-        <string>iCloud.com.musicdashboard.stats</string>
+        <string>iCloud.com.musicdashboard.app</string>
     </array>
     <key>com.apple.developer.icloud-services</key>
     <array>
@@ -12,5 +12,8 @@
     </array>
     <key>com.apple.developer.icloud-container-environment</key>
     <string>Production</string>
+    <!-- Temporarily commented out until provisioning profile is updated -->
+    <!-- <key>com.apple.developer.musickit</key>
+    <true/> -->
 </dict>
 </plist>
