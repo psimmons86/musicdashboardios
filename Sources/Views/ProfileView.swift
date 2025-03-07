@@ -1,11 +1,20 @@
 import SwiftUI
+import Services
+import MusicKit
+import PhotosUI
+
 
 @available(iOS 17.0, *)
 public struct UserProfileView: View {
     let userId: String
-    @State private var profile: UserProfile?
+    @State private var profile: SocialService.ExtendedUserProfile?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var isCurrentUser = false
+    @State private var showingImagePicker = false
+    @State private var selectedImage: PhotosPickerItem?
+    @State private var profileImage: Image?
+    @State private var isUploadingImage = false
     
     public init(userId: String) {
         self.userId = userId
@@ -25,17 +34,68 @@ public struct UserProfileView: View {
                     } else if let profile = profile {
                         // Profile Header
                         VStack(spacing: 16) {
-                            if let avatarURL = profile.avatarURL {
-                                AsyncImage(url: URL(string: avatarURL)) { image in
-                                    image
+                            // Profile Picture with upload option for current user
+                            ZStack(alignment: .bottomTrailing) {
+                                if let avatarUrl = profile.avatarUrl {
+                                    AsyncImage(url: avatarUrl) { image in
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                    } placeholder: {
+                                        Color(AppTheme.surfaceBackground)
+                                    }
+                                    .frame(width: 100, height: 100)
+                                    .clipShape(Circle())
+                                } else if let profileImage = profileImage {
+                                    profileImage
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
-                                } placeholder: {
-                                    Color(AppTheme.surfaceBackground)
+                                        .frame(width: 100, height: 100)
+                                        .clipShape(Circle())
+                                } else {
+                                    Circle()
+                                        .fill(LinearGradient(
+                                            gradient: Gradient(colors: [.blue, .purple.opacity(0.8)]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ))
+                                        .frame(width: 100, height: 100)
+                                        .overlay(
+                                            Text(profile.displayName.prefix(1).uppercased())
+                                                .foregroundColor(.white)
+                                                .font(.title)
+                                        )
                                 }
-                                .frame(width: 100, height: 100)
-                                .clipShape(Circle())
+                                
+                                // Edit button for current user
+                                if isCurrentUser {
+                                    Button {
+                                        showingImagePicker = true
+                                    } label: {
+                                        Image(systemName: "camera.fill")
+                                            .foregroundColor(.white)
+                                            .padding(8)
+                                            .background(Circle().fill(AppTheme.accent))
+                                    }
+                                    .disabled(isUploadingImage)
+                                    .photosPicker(isPresented: $showingImagePicker, selection: $selectedImage, matching: .images)
+                                    .onChange(of: selectedImage) { newValue in
+                                        if let newValue = newValue {
+                                            loadTransferable(from: newValue)
+                                        }
+                                    }
+                                }
                             }
+                            .overlay(
+                                Group {
+                                    if isUploadingImage {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                            .background(Color.black.opacity(0.5))
+                                            .clipShape(Circle())
+                                    }
+                                }
+                            )
                             
                             Text(profile.username)
                                 .font(.title2)
@@ -85,7 +145,7 @@ public struct UserProfileView: View {
                         // Posts
                         LazyVStack(spacing: 16) {
                             ForEach(profile.posts) { post in
-                                PostCard(post: post)
+                                PostView(post: post)
                             }
                         }
                     }
@@ -108,11 +168,44 @@ public struct UserProfileView: View {
         
         Task {
             do {
+                // For demo purposes, treat "user1" as current user
+                isCurrentUser = (userId == "user1")
+                
                 profile = try await SocialService.shared.getProfile(userId: userId)
                 isLoading = false
             } catch {
                 errorMessage = "Failed to load profile"
                 isLoading = false
+            }
+        }
+    }
+    
+    private func loadTransferable(from imageSelection: PhotosPickerItem) {
+        Task {
+            do {
+                // Show loading indicator
+                isUploadingImage = true
+                
+                // Load the image data from the picker
+                if let data = try await imageSelection.loadTransferable(type: Data.self) {
+                    if let uiImage = UIImage(data: data) {
+                        // Update the UI with the selected image
+                        profileImage = Image(uiImage: uiImage)
+                        
+                        // Upload the image to the server
+                        let imageUrl = try await SocialService.shared.uploadProfilePicture(imageData: data)
+                        
+                        // Update the user's profile with the new avatar URL
+                        profile = try await SocialService.shared.updateProfileAvatar(avatarUrl: imageUrl)
+                    }
+                }
+                
+                // Hide loading indicator
+                isUploadingImage = false
+            } catch {
+                // Handle error
+                errorMessage = "Failed to upload profile picture: \(error.localizedDescription)"
+                isUploadingImage = false
             }
         }
     }
