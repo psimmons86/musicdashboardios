@@ -27,11 +27,11 @@ We've prepared a comprehensive solution:
 
 ### 1. Fixed the iCloud Container ID
 
-We updated your `MusicDashboard.entitlements` file to match your bundle ID:
+We updated your `MusicDashboard.entitlements` file to use the correct iCloud container ID:
 ```xml
 <key>com.apple.developer.icloud-container-identifiers</key>
 <array>
-    <string>iCloud.com.musicdashboard.MusicDashboard</string>
+    <string>iCloud.com.musicdashboard.app</string>
 </array>
 ```
 
