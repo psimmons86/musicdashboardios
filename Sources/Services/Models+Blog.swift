@@ -1,8 +1,12 @@
 import Foundation
 import MusicKit
 import SwiftUI
-// Import AppTheme from Views module
-@_exported import struct Views.AppTheme
+
+// Define a local AppTheme for use in this file
+// This avoids the "No such module 'Views'" error
+fileprivate enum AppTheme {
+    static let accent = Color.blue
+}
 
 // Blog-related models extension
 extension Models {
