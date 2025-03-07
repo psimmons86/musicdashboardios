@@ -1,5 +1,6 @@
 import Foundation
 import CloudKit
+import MusicKit
 
 public class CloudKitService {
     public static let shared = CloudKitService()
@@ -460,10 +461,10 @@ public class CloudKitService {
             id: id,
             content: content,
             author: author,
+            track: track,
             createdAt: createdAt,
             likes: likes,
-            comments: comments,
-            track: track
+            comments: comments
         )
     }
     
