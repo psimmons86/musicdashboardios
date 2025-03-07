@@ -4,9 +4,9 @@ import CloudKit
 // This file imports and re-exports all service classes for easier access
 
 // Re-export CloudKit types
-@_exported import struct CloudKit.CKRecord
-@_exported import struct CloudKit.CKContainer
-@_exported import struct CloudKit.CKDatabase
+@_exported import class CloudKit.CKRecord
+@_exported import class CloudKit.CKContainer
+@_exported import class CloudKit.CKDatabase
 
 // CloudKitService is defined in this module, so no need to import it
 
