@@ -20,7 +20,7 @@
                                 <color key="tintColor" red="0.29019607843137257" green="0.17647058823529413" blue="0.5019607843137255" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <constraints>
                                     <constraint firstAttribute="width" constant="100" id="Aqf-Yd-Zcf"/>
-                                    <constraint firstAttribute="height" constant="100" id="Ygc-Yd-Zcf"/>
+                                    <constraint firstAttribute="height" constant="100" id="Bqf-Yd-Zcf"/>
                                 </constraints>
                             </imageView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Music Dashboard" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hxc-ge-VPf">
