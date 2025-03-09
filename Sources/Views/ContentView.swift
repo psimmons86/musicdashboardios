@@ -256,7 +256,7 @@ struct DashboardView: View {
     }
     
     // State for top tracks
-    @State private var topTracks: [Track] = []
+    @State private var topTracks: [Services.Track] = []
     @State private var isLoadingTracks = false
     @State private var tracksError: String? = nil
     
