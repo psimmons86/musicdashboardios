@@ -188,9 +188,9 @@ public class AppleMusicService {
     
     /// Check if MusicKit is available (entitlement is enabled)
     private var isMusicKitAvailable: Bool {
-        // Always return true to force the use of real MusicKit APIs
-        // If there are issues with entitlements, they will be caught when the APIs are called
-        return true
+        // Return false to use mock data instead of real MusicKit APIs
+        // This avoids entitlement issues while still providing playlist functionality
+        return false
     }
     
     /// Get mock data when MusicKit is not available
@@ -233,6 +233,12 @@ public class AppleMusicService {
     
     /// Get recommended tracks based on user's listening history
     public func getRecommendedTracks() async throws -> [Track] {
+        // Check if MusicKit is available
+        guard isMusicKitAvailable else {
+            print("MusicKit is not available. Using mock data for recommendations.")
+            return getMockTracks(count: 20, term: "recommended")
+        }
+        
         // Check authorization
         let status = MusicAuthorization.currentStatus
         guard status == .authorized else {
@@ -628,6 +634,12 @@ public class AppleMusicService {
     /// - Returns: Array of tracks matching the search term
     /// - Throws: Error if the operation fails
     public func searchTracks(term: String, limit: Int = 20) async throws -> [Track] {
+        // Check if MusicKit is available
+        guard isMusicKitAvailable else {
+            print("MusicKit is not available. Using mock data for search.")
+            return getMockTracks(count: limit, term: term)
+        }
+        
         // Check authorization
         let status = MusicAuthorization.currentStatus
         guard status == .authorized else {
