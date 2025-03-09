@@ -218,11 +218,13 @@ struct DashboardView: View {
                 checkAuthorization()
                 Task {
                     await loadNewsData()
+                    await loadTopTracks()
                 }
             }
             .refreshable {
                 checkAuthorization()
                 await loadNewsData()
+                await loadTopTracks()
             }
             .background(AppTheme.background)
         }
@@ -253,30 +255,119 @@ struct DashboardView: View {
         }
     }
     
-    // Top Tracks Section
+    // State for top tracks
+    @State private var topTracks: [Track] = []
+    @State private var isLoadingTracks = false
+    @State private var tracksError: String? = nil
+    
+    // Top Tracks Section with real data
     private var topTracksSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Top Tracks")
-                .font(.title2.bold())
-                .foregroundColor(AppTheme.textPrimary)
-            
-            // Sample tracks for now
-            ForEach(1...3, id: \.self) { index in
-                HStack {
-                    Text("Track \(index)")
-                        .font(.body)
-                        .foregroundColor(AppTheme.textPrimary)
-                    Spacer()
-                    Text("Artist \(index)")
-                        .font(.caption)
-                        .foregroundColor(AppTheme.textSecondary)
+            HStack {
+                Text("Top Tracks")
+                    .font(.title2.bold())
+                    .foregroundColor(AppTheme.textPrimary)
+                
+                Spacer()
+                
+                if isLoadingTracks {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                        .tint(AppTheme.mediumPurple)
+                } else {
+                    Button(action: {
+                        Task {
+                            await loadTopTracks()
+                        }
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                            .foregroundColor(AppTheme.mediumPurple)
+                    }
                 }
-                .padding(.vertical, 4)
+            }
+            
+            if let error = tracksError {
+                Text("Error loading tracks: \(error)")
+                    .font(.caption)
+                    .foregroundColor(AppTheme.error)
+                    .padding()
+            } else if topTracks.isEmpty && !isLoadingTracks {
+                Text("No tracks available")
+                    .foregroundColor(AppTheme.textSecondary)
+                    .padding()
+            } else {
+                // Real tracks
+                ForEach(topTracks.prefix(5)) { track in
+                    HStack {
+                        if let artwork = track.artwork {
+                            AsyncImage(url: artwork.url(width: 40, height: 40)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 40, height: 40)
+                                    .cornerRadius(4)
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(AppTheme.mediumPurple.opacity(0.3))
+                                    .frame(width: 40, height: 40)
+                                    .cornerRadius(4)
+                            }
+                        } else {
+                            Rectangle()
+                                .fill(AppTheme.mediumPurple.opacity(0.3))
+                                .frame(width: 40, height: 40)
+                                .cornerRadius(4)
+                                .overlay(
+                                    Image(systemName: "music.note")
+                                        .foregroundColor(AppTheme.textOnDark.opacity(0.6))
+                                )
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(track.title)
+                                .font(.body)
+                                .foregroundColor(AppTheme.textPrimary)
+                                .lineLimit(1)
+                            
+                            Text(track.artistName)
+                                .font(.caption)
+                                .foregroundColor(AppTheme.textSecondary)
+                                .lineLimit(1)
+                        }
+                        .padding(.leading, 8)
+                        
+                        Spacer()
+                    }
+                    .padding(.vertical, 4)
+                }
             }
         }
         .padding()
         .background(AppTheme.surfaceBackground)
         .cornerRadius(12)
+    }
+    
+    // Load top tracks from the service
+    private func loadTopTracks() async {
+        isLoadingTracks = true
+        tracksError = nil
+        
+        do {
+            // Check if we're authorized
+            if MusicAuthorization.currentStatus == .authorized {
+                // Get top tracks
+                topTracks = try await AppleMusicService.shared.getTopTracks()
+            } else {
+                // Use mock data if not authorized
+                topTracks = []
+                tracksError = "Not authorized to access Apple Music"
+            }
+        } catch {
+            print("Error loading top tracks: \(error)")
+            tracksError = error.localizedDescription
+        }
+        
+        isLoadingTracks = false
     }
     
     // News Section with real data
