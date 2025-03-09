@@ -188,10 +188,9 @@ public class AppleMusicService {
     
     /// Check if MusicKit is available (entitlement is enabled)
     private var isMusicKitAvailable: Bool {
-        // Check if the MusicKit entitlement is enabled
-        // This is a simple check that will return true if the app has the entitlement
-        // and false if it doesn't
-        return Bundle.main.object(forInfoDictionaryKey: "com.apple.developer.musickit") != nil
+        // Always return true to force the use of real MusicKit APIs
+        // If there are issues with entitlements, they will be caught when the APIs are called
+        return true
     }
     
     /// Get mock data when MusicKit is not available
@@ -234,44 +233,35 @@ public class AppleMusicService {
     
     /// Get recommended tracks based on user's listening history
     public func getRecommendedTracks() async throws -> [Track] {
-        // Check if MusicKit is available
-        guard isMusicKitAvailable else {
-            print("MusicKit is not available. Using mock data.")
-            return getMockTracks(term: "top hits")
-        }
-        
         // Check authorization
         let status = MusicAuthorization.currentStatus
         guard status == .authorized else {
             throw NSError(domain: "AppleMusicService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not authorized to access Apple Music"])
         }
         
-        // Request personalized recommendations
-        let request = MusicPersonalRecommendationsRequest()
-        let response = try await request.response()
+        // Since working with MusicPersonalRecommendationsRequest is complex,
+        // we'll use a simpler approach for this demo app
         
-        // Extract tracks from recommendations
-        var tracks: [Track] = []
-        
-        // Get some tracks from the catalog
-        let catalogRequest = MusicCatalogSearchRequest(term: "top hits", types: [Song.self])
+        // Search for popular tracks
+        var catalogRequest = MusicCatalogSearchRequest(term: "popular", types: [Song.self])
+        catalogRequest.limit = 20
         let catalogResponse = try await catalogRequest.response()
         
-        if let songs = catalogResponse.songs as? MusicItemCollection<Song> {
-            for song in songs {
-                // Convert Song to Track
-                let track = Track(
-                    id: song.id,
-                    title: song.title,
-                    artistName: song.artistName,
-                    artwork: song.artwork
-                )
-                tracks.append(track)
-                
-                // Limit to 20 tracks
-                if tracks.count >= 20 {
-                    break
-                }
+        var tracks: [Track] = []
+        
+        let songs = catalogResponse.songs
+        for song in songs {
+            let track = Track(
+                id: song.id,
+                title: song.title,
+                artistName: song.artistName,
+                artwork: song.artwork
+            )
+            tracks.append(track)
+            
+            // Limit to 20 tracks
+            if tracks.count >= 20 {
+                break
             }
         }
         
@@ -294,15 +284,31 @@ public class AppleMusicService {
             throw NSError(domain: "AppleMusicService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not authorized to access Apple Music"])
         }
         
-        // For now, return some catalog tracks as a substitute for recently played
-        let request = MusicCatalogSearchRequest(term: "popular", types: [Song.self])
-        let response = try await request.response()
-        
-        var tracks: [Track] = []
-        
-        if let songs = response.songs as? MusicItemCollection<Song> {
-            for song in songs {
-                // Convert Song to Track
+        do {
+            // Try to get the user's recently played history
+            print("Fetching user's recently played history...")
+            
+            // MusicKit doesn't have a direct API for recently played tracks
+            // So we'll try to get the user's library and sort by date added
+            var request = MusicLibraryRequest<Song>()
+            request.limit = 20
+            // Sort by date added, most recent first
+            request.sort(by: \.libraryAddedDate, ascending: false)
+            
+            let response = try await request.response()
+            
+            if response.items.isEmpty {
+                print("No recently played songs found. Falling back to catalog search.")
+                // Fall back to catalog search if the library is empty
+                return try await getRecentlyPlayedFromCatalog()
+            }
+            
+            print("Found \(response.items.count) recently added songs")
+            
+            // Convert library songs to Track objects
+            var tracks: [Track] = []
+            
+            for song in response.items {
                 let track = Track(
                     id: song.id,
                     title: song.title,
@@ -315,6 +321,39 @@ public class AppleMusicService {
                 if tracks.count >= 20 {
                     break
                 }
+            }
+            
+            return tracks
+        } catch {
+            print("Error fetching recently played songs: \(error). Falling back to catalog search.")
+            // Fall back to catalog search if there's an error with the library request
+            return try await getRecentlyPlayedFromCatalog()
+        }
+    }
+    
+    /// Get recently played tracks from the Apple Music catalog as a fallback
+    private func getRecentlyPlayedFromCatalog() async throws -> [Track] {
+        print("Fetching popular tracks from catalog as a substitute for recently played...")
+        var request = MusicCatalogSearchRequest(term: "popular", types: [Song.self])
+        request.limit = 20
+        let response = try await request.response()
+        
+        var tracks: [Track] = []
+        
+        let songs = response.songs
+        for song in songs {
+            // Convert Song to Track
+            let track = Track(
+                id: song.id,
+                title: song.title,
+                artistName: song.artistName,
+                artwork: song.artwork
+            )
+            tracks.append(track)
+            
+            // Limit to 20 tracks
+            if tracks.count >= 20 {
+                break
             }
         }
         
@@ -337,15 +376,26 @@ public class AppleMusicService {
             throw NSError(domain: "AppleMusicService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not authorized to access Apple Music"])
         }
         
-        // For now, return some catalog tracks as a substitute for top tracks
-        let request = MusicCatalogSearchRequest(term: "hits", types: [Song.self])
-        let response = try await request.response()
-        
-        var tracks: [Track] = []
-        
-        if let songs = response.songs as? MusicItemCollection<Song> {
-            for song in songs {
-                // Convert Song to Track
+        do {
+            // Try to get the user's actual library songs
+            print("Fetching user's library songs...")
+            var request = MusicLibraryRequest<Song>()
+            request.limit = 20
+            
+            let response = try await request.response()
+            
+            if response.items.isEmpty {
+                print("No library songs found. Falling back to catalog search.")
+                // Fall back to catalog search if the library is empty
+                return try await getTopTracksFromCatalog()
+            }
+            
+            print("Found \(response.items.count) library songs")
+            
+            // Convert library songs to Track objects
+            var tracks: [Track] = []
+            
+            for song in response.items {
                 let track = Track(
                     id: song.id,
                     title: song.title,
@@ -358,6 +408,39 @@ public class AppleMusicService {
                 if tracks.count >= 20 {
                     break
                 }
+            }
+            
+            return tracks
+        } catch {
+            print("Error fetching library songs: \(error). Falling back to catalog search.")
+            // Fall back to catalog search if there's an error with the library request
+            return try await getTopTracksFromCatalog()
+        }
+    }
+    
+    /// Get top tracks from the Apple Music catalog as a fallback
+    private func getTopTracksFromCatalog() async throws -> [Track] {
+        print("Fetching top tracks from catalog...")
+        var request = MusicCatalogSearchRequest(term: "hits", types: [Song.self])
+        request.limit = 20
+        let response = try await request.response()
+        
+        var tracks: [Track] = []
+        
+        let songs = response.songs
+        for song in songs {
+            // Convert Song to Track
+            let track = Track(
+                id: song.id,
+                title: song.title,
+                artistName: song.artistName,
+                artwork: song.artwork
+            )
+            tracks.append(track)
+            
+            // Limit to 20 tracks
+            if tracks.count >= 20 {
+                break
             }
         }
         
@@ -381,9 +464,6 @@ public class AppleMusicService {
         guard status == .authorized else {
             throw NSError(domain: "AppleMusicService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not authorized to access Apple Music"])
         }
-        
-        // Create a new playlist
-        let description = "Created by Music Dashboard"
         
         // In a real implementation, we would create a playlist in the user's library
         // For now, just return success
@@ -502,50 +582,42 @@ public class AppleMusicService {
     
     // MARK: - Search
     
-    /// Search for tracks
-    public func searchTracks(query: String) async throws -> [Track] {
-        // Check if MusicKit is available
-        guard isMusicKitAvailable else {
-            print("MusicKit is not available. Using mock data for search.")
-            // Filter mock tracks based on the query
-            let allMockTracks = getMockTracks(count: 20)
-            let filteredTracks = allMockTracks.filter { 
-                $0.title.lowercased().contains(query.lowercased()) || 
-                $0.artistName.lowercased().contains(query.lowercased())
-            }
-            return filteredTracks.isEmpty ? allMockTracks : filteredTracks
-        }
-        
+    /// Search for tracks based on a search term
+    /// - Parameters:
+    ///   - term: The search term
+    ///   - limit: Maximum number of tracks to return
+    /// - Returns: Array of tracks matching the search term
+    /// - Throws: Error if the operation fails
+    public func searchTracks(term: String, limit: Int = 20) async throws -> [Track] {
         // Check authorization
         let status = MusicAuthorization.currentStatus
         guard status == .authorized else {
             throw NSError(domain: "AppleMusicService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not authorized to access Apple Music"])
         }
         
-        // Create search request
-        var request = MusicCatalogSearchRequest(term: query, types: [Song.self])
-        request.limit = 20
+        // Create a search request
+        var request = MusicCatalogSearchRequest(term: term, types: [Song.self])
+        request.limit = limit
         
+        // Execute the request
         let response = try await request.response()
         
-        // Extract tracks
+        // Convert the results to Track objects
         var tracks: [Track] = []
         
-        if let songs = response.songs as? MusicItemCollection<Song> {
-            for song in songs {
-                // Convert Song to Track
-                let track = Track(
-                    id: song.id,
-                    title: song.title,
-                    artistName: song.artistName,
-                    artwork: song.artwork
-                )
-                tracks.append(track)
-                
-                // Limit to 20 tracks
-                if tracks.count >= 20 {
-                    break
-                }
+        let songs = response.songs
+        for song in songs {
+            let track = Track(
+                id: song.id,
+                title: song.title,
+                artistName: song.artistName,
+                artwork: song.artwork
+            )
+            tracks.append(track)
+            
+            // Limit to the requested number of tracks
+            if tracks.count >= limit {
+                break
             }
         }
         
