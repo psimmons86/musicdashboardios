@@ -20,14 +20,15 @@ struct MusicDashboardApp: App {
         WindowGroup {
             if #available(iOS 17.0, *) {
                 ContentView()
-                    .preferredColorScheme(.dark)
+                    .preferredColorScheme(.light)
                     .task {
                         await checkAuthorization()
                     }
             } else {
                 Text("This app requires iOS 17.0 or later")
-                    .foregroundColor(.white)
-                    .preferredColorScheme(.dark)
+                    .foregroundColor(AppTheme.textPrimary)
+                    .background(AppTheme.background)
+                    .preferredColorScheme(.light)
             }
         }
     }

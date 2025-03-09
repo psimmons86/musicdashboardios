@@ -4,7 +4,6 @@
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21505"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
-        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -16,18 +15,28 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Music Dashboard" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hxc-ge-VPf">
-                                <rect key="frame" x="97.666666666666686" y="408.66666666666669" width="198" height="35"/>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="music.note.list" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="Ygc-Yd-Zcf">
+                                <rect key="frame" x="146.66666666666666" y="323.33333333333331" width="100" height="99.666666666666686"/>
+                                <color key="tintColor" red="0.29019607843137257" green="0.17647058823529413" blue="0.5019607843137255" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="100" id="Aqf-Yd-Zcf"/>
+                                    <constraint firstAttribute="height" constant="100" id="Ygc-Yd-Zcf"/>
+                                </constraints>
+                            </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Music Dashboard" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hxc-ge-VPf">
+                                <rect key="frame" x="97.666666666666686" y="443" width="198" height="35"/>
                                 <fontDescription key="fontDescription" type="system" weight="medium" pointSize="29"/>
-                                <nil key="textColor"/>
+                                <color key="textColor" red="0.29019607843137257" green="0.17647058823529413" blue="0.5019607843137255" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="hxc-ge-VPf" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="Jxf-Nh-2Xt"/>
+                            <constraint firstItem="hxc-ge-VPf" firstAttribute="top" secondItem="Ygc-Yd-Zcf" secondAttribute="bottom" constant="20" id="Hgc-Yd-Zcf"/>
+                            <constraint firstItem="Ygc-Yd-Zcf" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Igc-Yd-Zcf"/>
                             <constraint firstItem="hxc-ge-VPf" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="wgO-dh-0Yd"/>
+                            <constraint firstItem="Ygc-Yd-Zcf" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-50" id="Zgc-Yd-Zcf"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -37,8 +46,6 @@
         </scene>
     </scenes>
     <resources>
-        <systemColor name="systemBackgroundColor">
-            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-        </systemColor>
+        <image name="music.note.list" catalog="system" width="128" height="115"/>
     </resources>
 </document>
