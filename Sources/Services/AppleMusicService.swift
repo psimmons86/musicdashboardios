@@ -520,7 +520,7 @@ public class AppleMusicService {
     
     // MARK: - Weekly Playlist
     
-    /// Generate a weekly playlist based on user's listening history
+    /// Generate a weekly playlist based on user's listening history and preferences
     public func getWeeklyPlaylist() async throws -> Models.Playlist {
         // Check if MusicKit is available
         guard isMusicKitAvailable else {
@@ -547,35 +547,74 @@ public class AppleMusicService {
             throw NSError(domain: "AppleMusicService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not authorized to access Apple Music"])
         }
         
-        // Get a mix of recommended and top tracks
-        let recommendedTracks = try await getRecommendedTracks()
-        let topTracks = try await getTopTracks()
+        // Load user preferences
+        let defaults = UserDefaults.standard
         
-        // Combine and shuffle
-        var tracks = recommendedTracks
-        tracks.append(contentsOf: topTracks)
-        tracks.shuffle()
+        // Get frequency preference (default to weekly)
+        let frequencyString = defaults.string(forKey: "playlistFrequency") ?? Models.UpdateFrequency.weekly.rawValue
+        let frequency = Models.UpdateFrequency(rawValue: frequencyString) ?? .weekly
+        
+        // Get mood preference (default to chill)
+        let moodString = defaults.string(forKey: "playlistMood") ?? Models.PlaylistMood.chill.rawValue
+        let mood = Models.PlaylistMood(rawValue: moodString) ?? .chill
+        
+        // Get genre preference (default to Mixed)
+        let genre = defaults.string(forKey: "playlistGenre") ?? "Mixed"
+        
+        // Create search term based on preferences
+        let searchTerm = "\(genre) \(mood.rawValue) music"
+        print("Generating playlist with search term: \(searchTerm)")
+        
+        // Get tracks based on preferences
+        var tracks: [Track] = []
+        
+        if genre == "Mixed" {
+            // For mixed genre, get a combination of recommended and top tracks
+            let recommendedTracks = try await getRecommendedTracks()
+            let topTracks = try await getTopTracks()
+            
+            // Combine and shuffle
+            tracks = recommendedTracks
+            tracks.append(contentsOf: topTracks)
+            tracks.shuffle()
+        } else {
+            // For specific genre/mood, search for matching tracks
+            tracks = try await searchTracks(term: searchTerm, limit: 30)
+        }
         
         // Limit to 20 tracks
         tracks = Array(tracks.prefix(20))
         
-        // Determine mood based on tracks
-        let mood = determineMood(from: tracks)
+        // Create playlist name based on preferences
+        let playlistName: String
+        if genre == "Mixed" {
+            playlistName = "Your \(frequency.rawValue) \(mood.rawValue.capitalized) Mix"
+        } else {
+            playlistName = "Your \(frequency.rawValue) \(genre) \(mood.rawValue.capitalized) Mix"
+        }
         
-        // Determine genre based on tracks
-        let genre = determineGenre(from: tracks)
+        // Calculate next update date based on frequency
+        let nextUpdate: Date
+        switch frequency {
+        case .daily:
+            nextUpdate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        case .weekly:
+            nextUpdate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+        case .monthly:
+            nextUpdate = Calendar.current.date(byAdding: .month, value: 1, to: Date()) ?? Date()
+        }
         
         // Create playlist
         return Models.Playlist(
             id: UUID().uuidString,
-            name: "Your Weekly Mix",
-            description: "Personalized playlist based on your listening history",
+            name: playlistName,
+            description: "Personalized playlist based on your preferences",
             tracks: tracks,
             genre: genre,
             mood: mood,
             schedule: Models.PlaylistSchedule(
-                frequency: .weekly,
-                nextUpdate: Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+                frequency: frequency,
+                nextUpdate: nextUpdate
             )
         )
     }
