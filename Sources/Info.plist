@@ -22,11 +22,14 @@
 	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Music Dashboard needs access to your Apple Music library to provide personalized playlists and streaming statistics.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
+		<string>icloud-services</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
@@ -39,15 +42,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSAppleMusicUsageDescription</key>
-	<string>Music Dashboard needs access to Apple Music to show your listening history and create personalized playlists.</string>
 	<key>kTCCServiceMediaLibrary</key>
-	<string>Music Dashboard needs access to your media library to show your music stats and create playlists.</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>audio</string>
-		<string>fetch</string>
-		<string>remote-notification</string>
-	</array>
+	<string>Music Dashboard needs access to your media library to provide personalized playlists and streaming statistics.</string>
+	<key>NSMusicLibraryUsageDescription</key>
+	<string>Music Dashboard needs access to your music library to provide personalized playlists and streaming statistics.</string>
+	<key>com.apple.developer.media-api.music-catalog</key>
+	<true/>
 </dict>
 </plist>
