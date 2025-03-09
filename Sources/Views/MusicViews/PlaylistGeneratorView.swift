@@ -9,7 +9,7 @@ public struct PlaylistGeneratorView: View {
     @State private var isGenerating = false
     @State private var isSaving = false
     @State private var error: String?
-    @State private var successMessage: String?
+    @State private var successMessage: String? = nil
     @State private var playlistName = "My Custom Playlist"
     @State private var selectedGenre: String = "Pop"
     @State private var selectedMood: String = "Energetic"
@@ -114,7 +114,7 @@ public struct PlaylistGeneratorView: View {
                     
                     // Generate another button
                     Button("Generate Another Playlist") {
-                        successMessage = nil
+                        self.successMessage = nil
                         generatedPlaylist = nil
                     }
                     .padding()
@@ -204,7 +204,7 @@ public struct PlaylistGeneratorView: View {
                 let success = try await AppleMusicService.shared.saveToAppleMusic(name: playlist.name, tracks: playlist.tracks)
                 
                 if success {
-                    successMessage = "Playlist '\(playlist.name)' saved to Apple Music!"
+                    self.successMessage = "Playlist '\(playlist.name)' saved to Apple Music!"
                     generatedPlaylist = nil
                 } else {
                     throw NSError(domain: "PlaylistGenerator", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to save playlist to Apple Music"])
